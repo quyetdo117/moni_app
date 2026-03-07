@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1002344017619",
+    "project_id": "moniapp-4846f",
+    "storage_bucket": "moniapp-4846f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1002344017619:android:951745bdc4d4590bf52e26",
+        "android_client_info": {
+          "package_name": "com.qiet.monisocial"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRbHJhawCgEZqlY8gl_VnYFAV2eU8j9_c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
