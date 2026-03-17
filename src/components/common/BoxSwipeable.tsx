@@ -11,9 +11,10 @@ interface BoxSwipeableProps<T> {
     data: T;
     onEdit: (data: T) => void;
     onDelete: (data: T) => void;
+    isSmall?: boolean
 }
 
-export default function BoxSwipeable<T>({ children, data, onEdit, onDelete }: BoxSwipeableProps<T>) {
+export default function BoxSwipeable<T>({ children, data, onEdit, onDelete, isSmall }: BoxSwipeableProps<T>) {
 
     const onEdit_ = () => {
         onEdit(data);
@@ -32,16 +33,16 @@ export default function BoxSwipeable<T>({ children, data, onEdit, onDelete }: Bo
 
         return (
             <View style={{ width: 90, flexDirection: 'row' }}>
-                <Reanimated.View style={[{ flexDirection: 'row', flex: 1 }, styleAnimation]}>
+                <Reanimated.View style={[{ flexDirection: 'row' }, styleAnimation, isSmall && { alignItems: 'center' }]}>
                     <RNBounceable
-                        style={[styles.btn, { backgroundColor: COLOR_APP.yellow }]}
+                        style={[styles.btn, { backgroundColor: COLOR_APP.yellow }, isSmall && { height: 45, borderRadius: 10 }]}
                         onPress={onEdit_}
                     >
                         <MaterialIcons name="edit" size={24} color="white" />
                     </RNBounceable>
 
                     <RNBounceable
-                        style={[styles.btn, { backgroundColor: COLOR_APP.red }]}
+                        style={[styles.btn, { backgroundColor: COLOR_APP.red }, isSmall && { height: 45, borderRadius: 10 }]}
                         onPress={onDelete_}
                     >
                         <MaterialIcons name="delete" size={24} color="white" />

@@ -2,7 +2,7 @@
 export interface DataFormExpense  {
     type: number;
     name: string;
-    total_value: number;
+    total_value: string;
     date_buy: number;
     note?: string;
     category_id: string;

@@ -1,11 +1,16 @@
 import { Asset, Transaction, User } from "./schema.types";
 
 export interface InfoUser extends User {
-  assets: Asset[]
+  assets: InfoAsset[]
 }
 
 export interface InfoTransaction extends Transaction {
   type_expense?: number
+}
+
+export interface InfoAsset extends Asset {
+  total_market: number;
+  stt?: number;
 }
 
 export interface AuthResponse {

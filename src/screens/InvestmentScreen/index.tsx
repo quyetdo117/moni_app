@@ -1,178 +1,91 @@
 import BoxMoney from '@/components/common/BoxMoney';
 import ButtonCustom from '@/components/common/ButtonCustom';
 import HeaderView from '@/components/common/HeaderView';
-import { COLOR_APP } from '@/constants/constants';
+import { COLOR_APP, key_assets } from '@/constants/constants';
+import { getCategories } from '@/services/Api/get.services';
+import { useListStore, useUserStore } from '@/store/main.store';
 import { RootStackScreenProps } from '@/types/navigation.types';
 import { PopupRef } from '@/types/view.types';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useRef } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import ItemInvest from './items/ItemInvest';
 import PopupFormInvest from './popups/PopupFormInvest';
-import PopupInvest from './popups/PopupInvest';
 import { DataInvestItem } from './types/Investment.types';
 
-const data_fake = [
-    {
-        id: '1',
-        name: 'Tài sản đầu tư',
-        total_value: 10000,
-        type: 1
-    },
-    {
-        id: '2',
-        name: 'Giá trị hiện tại',
-        total_value: 100000,
-        type: 2
-    }
-]
-
-const data_list = [
-    {
-        id: 1,
-        title: 'Bitcoin',
-        value_origin: 10000,
-        value_current: 100000,
-        date_buy: '11/01/2026',
-        note: 'mua choi choi',
-        extra_value: 100,
-        transactions: [
-            {
-                id_transaction: 1,
-                type: 1,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 2,
-                type: 0,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 3,
-                type: 1,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 4,
-                type: 0,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 5,
-                type: 1,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 6,
-                type: 0,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 7,
-                type: 1,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            },
-            {
-                id_transaction: 8,
-                type: 0,
-                name: 'Bitcoin',
-                quantity: 2,
-                rate_value: 9000,
-                market_value: 10000,
-                extra_value: 100,
-                total_value: 30000,
-                date_buy: '11/01/2026'
-            }
-        ]
-    },
-    {
-        id: 2,
-        title: 'Mua Vang',
-        value_origin: 13000,
-        value_current: 1000,
-        date_buy: '11/01/2026',
-        note: 'msds',
-        transactions: []
-    },
-    {
-        id: 3,
-        title: 'Mua dat',
-        value_origin: 10000000,
-        value_current: 1000000000,
-        date_buy: '11/01/2026',
-        note: 'ko co j',
-        transactions: []
-    },
-    {
-        id: 4,
-        title: 'Co Phieu Vin',
-        value_origin: 10000,
-        value_current: 100000,
-        date_buy: '11/01/2026',
-        note: '',
-        transactions: []
-    }
-]
 
 interface InvestType {
     item: DataInvestItem;
     index: number;
 }
 
+interface DataInvest {
+    id: string;
+    name: string;
+    total_value: number;
+    type: number;
+}
+
+const data_init = [
+    {
+        id: '1',
+        name: 'Vốn đầu tư',
+        total_value: 0,
+        type: 1
+    },
+    {
+        id: '2',
+        name: 'Giá trị hiện tại',
+        total_value: 0,
+        type: 2
+    }
+]
+
 export default function InvestmentScreen({ navigation }: RootStackScreenProps<'InvestmentScreen'>) {
-
-
     const PopupRef = useRef<PopupRef>(null);
     const PopupFormRef = useRef<PopupRef>(null);
+    const infoAsset = useUserStore(state => state.infoAsset);
+    const setListInvest = useListStore(state => state.setListInvest);
+    const listInvest = useListStore(state => state.listInvest);
+    const uid = useUserStore(state => state.uid);
+    const [dataInvest, setDataInvest] = useState<DataInvest[]>(data_init);
+
+    useEffect(() => {
+        getList();
+    }, [])
+
+    useEffect(() => {
+        
+    }, [listInvest])
+
+    useEffect(() => {
+        const newData = [...data_init];
+        newData[0].total_value = infoAsset?.invest?.total_value || 0;
+        newData[1].total_value = infoAsset?.invest?.total_market || 0;
+        setDataInvest(newData);
+    }, [infoAsset])
+
+    const getList = async () => {
+        try {
+            const jsonData = await getCategories(key_assets.invest, uid);
+            if (jsonData.success && jsonData.data) {
+                setListInvest(jsonData.data as DataInvestItem[]);
+            }
+        } catch (error) {
+
+        }
+    }
+
+    const onCreateSuccess = async () => {
+        getList();
+    }
 
     const onBack = () => {
         navigation.goBack()
     }
 
     const onPressCreate = () => {
-        if(PopupFormRef.current){
+        if (PopupFormRef.current) {
             PopupFormRef.current.onShow()
         }
     }
@@ -182,7 +95,7 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
             <View>
                 <View style={styles.box_overview}>
                     {
-                        data_fake.map((item, index) => {
+                        dataInvest.map((item, index) => {
                             return <BoxMoney
                                 style_box={{ backgroundColor: item.id == '2' ? COLOR_APP.blue : '#fff' }}
                                 style={{ flex: 1 }} data={item}
@@ -203,15 +116,16 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
     }
 
     const onPressItem = (data: DataInvestItem) => {
-        if(PopupRef.current){
-            PopupRef.current.onShow(data);
-        }
+        navigation.navigate('InvestmentDetailScreen', {
+            data
+        });
     }
+
 
     const renderItem = ({ item, index }: InvestType) => {
         return (
-            <View style={{marginHorizontal: 10, marginVertical: 5}}>
-                <ItemInvest data={item} onPress={onPressItem}/>
+            <View key={item.id} style={{ marginHorizontal: 10, marginVertical: 5 }}>
+                <ItemInvest data={item} onPress={onPressItem} />
             </View>
         )
     }
@@ -221,17 +135,20 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
     }
 
     return (
-        <View style={styles.conatiner}>
-            <HeaderView onBack={onBack} title={'Khoản đầu tư'} />
-            <FlatList
-                ListHeaderComponent={renderHeader}
-                data={data_list}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor_}
-            />
-            <PopupInvest ref={PopupRef}/>
-            <PopupFormInvest ref={PopupFormRef} />
-        </View>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}>
+            <View style={styles.conatiner}>
+                <HeaderView onBack={onBack} title={'Khoản đầu tư'} />
+                <FlatList
+                    ListHeaderComponent={renderHeader}
+                    data={listInvest}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor_}
+                />
+                <PopupFormInvest ref={PopupFormRef} onSuccess={onCreateSuccess} />
+            </View>
+        </KeyboardAvoidingView>
     )
 }
 

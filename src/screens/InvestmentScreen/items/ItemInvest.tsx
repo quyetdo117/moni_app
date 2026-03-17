@@ -14,8 +14,8 @@ interface ItemInvestProps {
 }
 
 export default function ItemInvest({ data, onPress }: ItemInvestProps) {
-  const { title, value_current, value_origin, date_buy, note } = data;
-  const roi_value = calculateROI(value_origin, value_current);
+  const { name, total_value, total_market, market_value, quantity } = data;
+  const roi_value = calculateROI(total_value, total_market || 0);
 
   const onPressItem = () => {
     if(onPress) {
@@ -25,21 +25,21 @@ export default function ItemInvest({ data, onPress }: ItemInvestProps) {
   return (
     <RNBounceable onPress={onPressItem} style={[styels.box, commonStyles.box_shadow]}>
       <View style={styels.row}>
-        <Text style={styels.title}>{title}</Text>
-        <Text style={styels.date}>{date_buy}</Text>
+        <Text style={styels.title}>{name}</Text>
+        <Text style={styels.date}>{`SL: ${quantity ?? 0}`}</Text>
       </View>
       <View style={styels.row}>
         <View>
           <Text style={styels.date}>{'Vốn:'}</Text>
-          <Text style={styels.price}>{formatSmartMoney(value_origin)}</Text>
+          <Text style={styels.price}>{formatSmartMoney(total_value)}</Text>
         </View>
         <View style={{alignItems: 'flex-end'}}>
           <Text style={styels.date}>{'Giá trị:'}</Text>
-          <Text style={styels.price}>{formatSmartMoney(value_current)}</Text>
+          <Text style={styels.price}>{formatSmartMoney(total_market || 0)}</Text>
         </View>
       </View>
        <View style={styels.row}>
-        <Text style={styels.date}>{`Note: ${note}`}</Text>
+        <Text style={styels.date}>{`Giá TT: ${formatSmartMoney(market_value || 0)}`}</Text>
         <Text style={styels.roi}>{`ROI: ${roi_value}%`}</Text>
       </View>
     </RNBounceable>

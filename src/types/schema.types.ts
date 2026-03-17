@@ -1,12 +1,9 @@
-export type type_asset = 'expense' | 'income' | 'invest';
+export type type_asset = 'expense' | 'save' | 'invest';
 
 export interface User {
     id: string,
     uid: string;
     name: string;
-    total_expense: number;
-    total_invest: number;
-    total_save: number;
 }
 
 export interface Asset {
@@ -22,11 +19,13 @@ export interface Category {
     asset_id: string;
     name: string;
     total_value: number;
-    total_current?: number;
+    total_market?: number;
+    market_value?: number;
     quantity?: number;
     type: number;
     type_expense?: number;
     user_id: string;
+    date_update: number;
 }
 
 export interface Transaction {
@@ -37,8 +36,6 @@ export interface Transaction {
     name: string;
     quantity?: number;
     rate_value?: number;
-    market_value?: number;
-    extra_value?: number;
     total_value: number;
     date_buy: number;
     note: string;

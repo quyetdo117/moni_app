@@ -1,28 +1,29 @@
-import { COLOR_APP } from '@/constants/constants'
+import { COLOR_APP, key_assets, TYPE_TRANSACTION } from '@/constants/constants'
+import { getCategories } from '@/services/Api/get.services'
 import { createTransactionInvest } from '@/services/Api/transaction.services'
+import { useChartStore, useListStore, useUserStore } from '@/store/main.store'
 import { Category } from '@/types/schema.types'
 import { PopupRef } from '@/types/view.types'
-import { line_min } from '@/utils/calculate'
 import { commonStyles } from '@/utils/styles_shadow'
 import RNBounceable from '@freakycoder/react-native-bounceable'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import moment from 'moment'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown'
 import { DataFormInvest } from '../types/Investment.types'
 
 const dataOptions = [
     {
-        id: 1,
-        title: 'Sell',
-        type: 0
-    },
-    {
         id: 2,
         title: 'Buy',
-        type: 1
+        type: TYPE_TRANSACTION.IN
+    },
+    {
+        id: 1,
+        title: 'Sell',
+        type: TYPE_TRANSACTION.OUT
     }
 ]
 
@@ -34,7 +35,12 @@ interface dataOption {
 
 type NameInputMode = 'existing' | 'new';
 
-const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
+interface PopupFormInvestProps {
+    onSuccess?: () => void;
+}
+
+const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) => {
+    const { onSuccess } = props;
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const isChangeMarket = useRef(false);
@@ -43,20 +49,23 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
     const [isOpen, setOpen] = useState(false);
     const [nameInputMode, setNameInputMode] = useState<NameInputMode>('existing');
     const [selectedAsset, setSelectedAsset] = useState<Category | null>(null);
+    const uid = useUserStore(state => state.uid);
+    const infoAsset = useUserStore(state => state.infoAsset);
+    const listInvest = useListStore(state => state.listInvest);
+    const setListInvest = useListStore(state => state.setListInvest);
+    const updateChartData = useChartStore(state => state.updateChartData);
 
-    const initData = {
+    const initData: DataFormInvest = {
         type: 1,
         name: '',
-        quantity: 0,
-        rate_value: 0,
-        market_value: 0,
-        extra_value: 0,
-        total_value: 0,
+        quantity: '',
+        rate_value: '',
+        market_value: '',
+        total_value: '',
         date_buy: moment(new Date()).unix(),
         note: '',
-        asset_id: 'Uu1DSauWI73HYTzSqupr',
-        type_asset: '',
-        user_id: 'o82cmc6AGTHlPl6HDlga'
+        asset_id: infoAsset?.invest?.id ?? '',
+        user_id: uid
     }
     const [categories, setCategories] = useState<Category[]>([]);
     const [dataForm, setDataForm] = useState<DataFormInvest>(initData);
@@ -67,7 +76,20 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
     const snapPoints = useMemo(() => ['50%', '90%'], []);
 
     useEffect(() => {
+        getCategoriesInvest();
     }, [])
+
+    const getCategoriesInvest = async () => {
+        try {
+            const jsonData = await getCategories(key_assets.invest, uid);
+            if (jsonData.success) {
+                const list = jsonData.data as Category[] || [];
+                setCategories(list)
+            }
+        } catch (error) {
+
+        }
+    }
 
     const onShow = () => {
         if (bottomSheetRef.current) {
@@ -115,8 +137,8 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
         if (type == 'rate_value' && !isChangeMarket.current) {
             setDataForm({
                 ...dataForm,
-                [type]: Number(value),
-                market_value: Number(value)
+                [type]: value,
+                market_value: value
             })
         } else {
             if (!isChangeMarket.current && type == 'market_value') {
@@ -133,11 +155,44 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
     const onCreate = async () => {
         if (name && quantity && rate_value && total_value && date_buy && market_value) {
             const jsonCreate = await createTransactionInvest(dataForm)
-            console.log('loggg json', jsonCreate);
-
+            if (jsonCreate.success) {
+                handleCreateSuccess(jsonCreate.data);
+            } else {
+                Alert.alert('Lỗi', jsonCreate.message)
+            }
         } else {
             Alert.alert('Nhap du thong tin!', JSON.stringify(dataForm))
         }
+    }
+
+    // Hàm xử lý sau khi tạo thành công
+    const handleCreateSuccess = (createdData: any) => {
+        if (!createdData) {
+            onClose();
+            return;
+        }
+
+        // Cập nhật listInvest: nếu đã có thì cộng dồn, nếu chưa thì thêm vào đầu
+        const existingIndex = listInvest.findIndex(item => item.id === createdData.id);
+        if (existingIndex >= 0) {
+            // Cập nhật item hiện có
+            const updatedList = [...listInvest];
+            updatedList[existingIndex] = {
+                ...updatedList[existingIndex],
+                total_value: (updatedList[existingIndex].total_value || 0) + (createdData.total_value || 0),
+                quantity: (updatedList[existingIndex].quantity || 0) + (createdData.quantity || 0)
+            };
+            setListInvest(updatedList);
+        } else {
+            // Thêm mới vào đầu danh sách
+            setListInvest([createdData, ...listInvest]);
+        }
+
+        // Cập nhật chart
+        const valueChange = dataForm.type === TYPE_TRANSACTION.IN ? Number(total_value) : -Number(total_value);
+        updateChartData(key_assets.invest, valueChange, { date_buy: dataForm.date_buy, type: dataForm.type });
+
+        onClose();
     }
 
     useImperativeHandle(ref, () => ({
@@ -162,13 +217,13 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
     }
 
     const onGetValue = (type: string) => {
-        const { name, quantity, rate_value, market_value, extra_value, total_value, date_buy, note } = dataForm;
+        const { name, quantity, rate_value, market_value, total_value, note } = dataForm;
         switch (type) {
             case 'name': return name;
             case 'quantity': return quantity.toString();
             case 'rate_value': return rate_value.toString();
             case 'market_value': return market_value.toString();
-            case 'extra_value': return extra_value?.toString();
+            // case 'extra_value': return extra_value?.toString();
             case 'total_value': return total_value.toString();
             case 'date_buy': return dataStr;
             case 'note': return note;
@@ -187,32 +242,23 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
         }
     }
 
-    const renderBoxInput = (type: string, isRight?: boolean) => {
-        const isNote = type == 'note';
-        const isDate = type == 'date_buy';
+    const renderField = (type: string, isNote: boolean = false) => {
         return (
-            <RNBounceable style={[styles.box_input,
-            commonStyles.box_shadow_transaction,
-            isRight && { marginLeft: 10 }]}
-                onPress={() => {
-                    onPressBoxInput(type);
-                }}
-            >
-                <Text style={styles.title_input}>{onGetTitle(type)}</Text>
-                <View style={[styles.box_txt]}>
-                    <TextInput
-                        ref={(el) => { refInput.current[type] = el }}
-                        keyboardType={isNote ? 'default' : 'numeric'}
-                        readOnly={isDate ? true : false}
-                        placeholder='Nhập ...'
-                        value={onGetValue(type)}
-                        onChangeText={(txt) => onChangeText(txt, type)}
-                    // value=''
-                    />
-                </View>
-            </RNBounceable>
-        )
-    }
+            <>
+                <Text style={styles.label}>{onGetTitle(type)}</Text>
+                <TextInput
+                    style={[styles.input, isNote && styles.noteInput]}
+                    value={onGetValue(type)}
+                    onChangeText={(txt) => {
+                        onChangeText(txt, type);
+                    }}
+                    keyboardType={isNote ? 'default' : 'numeric'}
+                    placeholder={`Nhập ${onGetTitle(type).toLowerCase()}`}
+                    multiline={isNote}
+                />
+            </>
+        );
+    };
 
     const onSelectNameMode = (mode: NameInputMode) => {
         setNameInputMode(mode);
@@ -222,52 +268,13 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
 
     const onSelectExistingAsset = (item: Category) => {
         setSelectedAsset(item);
-        onChangeText(item.name, 'name')
+        setDataForm(prev => ({ ...prev, name: item.name, category_id: item.id }));
     }
 
-    const renderInputName = () => {
+    const renderItemCategory = (data: Category) => {
         return (
-            <View style={styles.box_name_section}>
-                <View style={styles.row_mode}>
-                    <RNBounceable
-                        style={[styles.mode_btn, nameInputMode === 'existing' && styles.mode_btn_active]}
-                        onPress={() => onSelectNameMode('existing')}
-                    >
-                        <Text style={[styles.mode_btn_txt, nameInputMode === 'existing' && styles.mode_btn_txt_active]}>
-                            {'Có sẵn'}
-                        </Text>
-                    </RNBounceable>
-                    <RNBounceable
-                        style={[styles.mode_btn, nameInputMode === 'new' && styles.mode_btn_active]}
-                        onPress={() => onSelectNameMode('new')}
-                    >
-                        <Text style={[styles.mode_btn_txt, nameInputMode === 'new' && styles.mode_btn_txt_active]}>
-                            {'Tạo mới'}
-                        </Text>
-                    </RNBounceable>
-                </View>
-
-                <Text style={styles.name_txt}>{'Tên tài sản'}</Text>
-                <View style={[styles.box_name_input, commonStyles.box_shadow_transaction]}>
-                    {nameInputMode === 'existing' ? (
-                        <Dropdown
-                            data={categories}
-                            labelField="label"
-                            valueField="value"
-                            placeholder="Chọn tài sản..."
-                            style={styles.dropdown_name}
-                            value={selectedAsset?.name}
-                            onChange={onSelectExistingAsset}
-                        />
-                    ) : (
-                        <TextInput
-                            placeholder='Nhập tên tài sản ...'
-                            onChangeText={(txt) => onChangeText(txt, 'name')}
-                            value={dataForm.name}
-                            style={styles.txt_name}
-                        />
-                    )}
-                </View>
+            <View style={styles.item_category}>
+                <Text style={styles.item_category_txt}>{data.name}</Text>
             </View>
         )
     }
@@ -324,46 +331,89 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
             }}
             backdropComponent={renderBackdrop}
         >
-            <View style={styles.header}>
+            <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
                 <Text style={styles.title}>{'Nhập thông tin'}</Text>
-                <RNBounceable onPress={onCreate}>
-                    <Text style={styles.txt_create}>{'Tạo'}</Text>
-                </RNBounceable>
-            </View>
-            <BottomSheetScrollView>
-                {renderInputName()}
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('quantity')
-                    }
-                    {
-                        renderBoxOption()
-                    }
+
+                <View style={styles.box_name_section}>
+                    <View style={styles.row_mode}>
+                        <RNBounceable
+                            style={[styles.mode_btn, nameInputMode === 'existing' && styles.mode_btn_active]}
+                            onPress={() => onSelectNameMode('existing')}
+                        >
+                            <Text style={[styles.mode_btn_txt, nameInputMode === 'existing' && styles.mode_btn_txt_active]}>
+                                {'Có sẵn'}
+                            </Text>
+                        </RNBounceable>
+                        <RNBounceable
+                            style={[styles.mode_btn, nameInputMode === 'new' && styles.mode_btn_active]}
+                            onPress={() => onSelectNameMode('new')}
+                        >
+                            <Text style={[styles.mode_btn_txt, nameInputMode === 'new' && styles.mode_btn_txt_active]}>
+                                {'Tạo mới'}
+                            </Text>
+                        </RNBounceable>
+                    </View>
+                    {/* Name Section */}
+                    <Text style={styles.label}>{'Tên tài sản'}</Text>
+                    <View style={[styles.box_name_input]}>
+                        {nameInputMode === 'existing' ? (
+                            <Dropdown
+                                data={categories}
+                                labelField="name"
+                                valueField="name"
+                                placeholder="Chọn tài sản..."
+                                style={styles.dropdown_name}
+                                renderItem={renderItemCategory}
+                                value={selectedAsset?.name}
+                                onChange={onSelectExistingAsset}
+                            />
+                        ) : (
+                            <TextInput
+                                placeholder='Nhập tên tài sản ...'
+                                onChangeText={(txt) => onChangeText(txt, 'name')}
+                                value={dataForm.name}
+                                style={styles.txt_name}
+                            />
+                        )}
+                    </View>
                 </View>
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('rate_value')
-                    }
-                    {
-                        renderBoxInput('market_value', true)
-                    }
+
+                {/* Type */}
+                <Text style={styles.label}>{'Loại giao dịch'}</Text>
+                <View style={styles.input}>
+                    <Dropdown
+                        data={dataOptions}
+                        labelField="title"
+                        valueField="title"
+                        renderItem={renderItemDrop}
+                        placeholder="Chọn một mục..."
+                        value={dataType.current}
+                        onChange={item => {
+                            onChangeType(item);
+                        }}
+                    />
                 </View>
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('total_value')
-                    }
-                    {
-                        renderBoxInput('extra_value', true)
-                    }
-                </View>
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('date_buy')
-                    }
-                    {
-                        renderBoxInput('note', true)
-                    }
-                </View>
+
+                {/* Quantity */}
+                {renderField('quantity')}
+
+                {/* Rate Value */}
+                {renderField('rate_value')}
+
+                {/* Market Value */}
+                {renderField('market_value')}
+
+                {/* Total Value */}
+                {renderField('total_value')}
+
+                {/* Date */}
+                <Text style={styles.label}>{onGetTitle('date_buy')}</Text>
+                <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => openShowDate()}
+                >
+                    <Text style={styles.dateText}>{dataStr}</Text>
+                </TouchableOpacity>
 
                 {isOpen && (
                     <DateTimePicker
@@ -371,10 +421,17 @@ const PopupFormInvest = forwardRef<PopupRef>((props, ref) => {
                         mode="date"
                         display="default"
                         onChange={onChangeDate}
-
                     />
                 )}
+
+                {/* Note */}
+                {renderField('note', true)}
+
             </BottomSheetScrollView>
+            {/* Save Button */}
+            <TouchableOpacity style={styles.saveButton} onPress={onCreate}>
+                <Text style={styles.saveButtonText}>{'Tạo'}</Text>
+            </TouchableOpacity>
         </BottomSheet>
     )
 })
@@ -384,26 +441,69 @@ PopupFormInvest.displayName = 'PopupFormInvest'
 export default PopupFormInvest;
 
 const styles = StyleSheet.create({
+    contentContainer: {
+        marginHorizontal: 20
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginTop: 10,
+        marginBottom: 5,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 10,
+        fontSize: 14,
+    },
+    noteInput: {
+        height: 80,
+        textAlignVertical: 'top',
+    },
+    dateButton: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 12,
+    },
+    dateText: {
+        fontSize: 14,
+    },
+    saveButton: {
+        backgroundColor: COLOR_APP.blue,
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 5,
+        marginBottom: 40,
+        marginHorizontal: 20
+    },
+    saveButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
     box_name_section: {
         marginBottom: 5
     },
     box_name_input: {
         backgroundColor: '#fff',
-        borderRadius: 10,
-        marginHorizontal: 10,
+        borderRadius: 8,
         marginVertical: 5,
-        paddingHorizontal: 5
+        paddingHorizontal: 5,
+        borderWidth: 1,
+        borderColor: '#ddd'
     },
     box_name: {
         backgroundColor: '#fff',
-        borderRadius: 10,
+        borderRadius: 8,
         marginHorizontal: 10,
         marginVertical: 5,
         paddingHorizontal: 5
     },
     row_mode: {
         flexDirection: 'row',
-        marginHorizontal: 10,
         marginBottom: 5,
         gap: 8
     },
@@ -437,14 +537,16 @@ const styles = StyleSheet.create({
         marginLeft: 10
     },
     txt_name: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600'
     },
     box_input: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 10,
-        padding: 10
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: '#ddd'
     },
     txt_input: {
         fontSize: 14,
@@ -452,26 +554,28 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
-        marginHorizontal: 10,
+        marginHorizontal: 20,
         marginVertical: 5
     },
     box_txt: {
-        borderWidth: line_min,
-        borderColor: '#dbdbdb',
-        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
         backgroundColor: '#fff',
-        paddingHorizontal: 5
+        paddingHorizontal: 10,
+        paddingVertical: 5
     },
     title: {
-        color: '#000',
-        fontSize: 18,
-        fontWeight: 'bold'
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginHorizontal: 10,
+        marginHorizontal: 20,
         marginBottom: 20
     },
     txt_create: {
@@ -495,6 +599,15 @@ const styles = StyleSheet.create({
         color: '#000',
         fontSize: 14,
         marginBottom: 3,
+        fontWeight: '600'
+    },
+    item_category: {
+        paddingHorizontal: 10,
+        paddingVertical: 5
+    },
+    item_category_txt: {
+        fontSize: 15,
+        color: '#000',
         fontWeight: '600'
     }
 })

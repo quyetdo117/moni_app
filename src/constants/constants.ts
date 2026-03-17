@@ -1,3 +1,4 @@
+import { type_asset } from "@/types/schema.types"
 
 export const TYPE_TRANSACTION = {
     IN: 1,
@@ -45,7 +46,7 @@ export const types_expense = [
     }
 ]
 
-export const key_assets = {
+export const key_assets: Record<string, type_asset> = {
     expense: 'expense',
     invest: 'invest',
     save: 'save'
@@ -57,6 +58,18 @@ export const COLOR_APP = {
     yellow: '#f9ab00',
     red: '#d93025',
     gray: '#2f3030'
+}
+
+export const Colors = {
+    primary: '#1a73e8',
+    background: '#ffffff',
+    surface: '#f5f5f5',
+    text: '#1a1a1a',
+    textSecondary: '#666666',
+    border: '#e0e0e0',
+    success: '#4caf50',
+    warning: '#ff9800',
+    error: '#f44336',
 }
 
 export const getColorCategory = (type: number): string => {

@@ -4,10 +4,12 @@ import EmptyView from '@/components/common/EmptyView';
 import HeaderView from '@/components/common/HeaderView';
 import LineList from '@/components/common/LineList';
 import ItemPayment from '@/components/items/ItemPayment';
+import { PopupConfirm } from '@/components/popups/PopupConfirm';
+import { PopupToast } from '@/components/popups/PopupToast';
 import { COLOR_APP, getColorCategory, key_assets } from '@/constants/constants';
 import { getInfoExpense, getListTransaction } from '@/services/Api/get.services';
 import { deleteTransaction } from '@/services/Api/transaction.services';
-import { useListStore, useUserStore } from '@/store/main.store';
+import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
 import { InfoTransaction } from '@/types/info.types';
 import { RootStackScreenProps } from '@/types/navigation.types';
 import { Category } from '@/types/schema.types';
@@ -16,7 +18,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ChartPayment, { ChartRef } from './items/ChartPayment';
 import ItemCategory from './items/ItemCategory';
 import PopupFormExpense from './popups/PopupExpense';
@@ -42,17 +44,40 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     ])
 
     const refPopupForm = useRef<PopupRef>(null);
+    const refPopupConfirm = useRef<PopupRef>(null);
+    const refPopupToast = useRef<PopupRef>(null);
     const uid = useUserStore(state => state.uid);
     const refChart = useRef<ChartRef>(null);
     const [dataList, setDataList] = useState<InfoTransaction[]>([]);
     const setListExpense = useListStore(state => state.setListExpense);
+    const [selectedType, setSelectedType] = useState<number>(0);
+    const updateChartData = useChartStore(state => state.updateChartData);
+    const infoAsset = useUserStore(state => state.infoAsset);
+    const setInfoAsset = useUserStore(state => state.setInfoAsset);
 
+    // Hàm dùng chung để cập nhật infoAsset
+    const updateInfoAssetValue = (valueChange: number, transactionType: number) => {
+        const currentExpenseAsset = infoAsset?.[key_assets.expense];
+        if (!currentExpenseAsset) return;
+
+        // Xác định giá trị thay đổi dựa trên type giao dịch
+        // transactionType = 1 (IN/Thu nhập) -> cộng vào
+        // transactionType = 0 (OUT/Chi tiêu) -> trừ đi
+        const actualChange = transactionType === 1 ? valueChange : -valueChange;
+
+        const updatedAsset = {
+            ...currentExpenseAsset,
+            total_value: Number(currentExpenseAsset.total_value || 0) + actualChange
+        };
+        setInfoAsset([updatedAsset]);
+    };
 
     const [categories, setListCate] = useState<Category[]>([]);
 
     useEffect(() => {
         getListCate();
-        onGetData();
+        // Set initial focus to Tổng chi tiêu (type: 0)
+        onPressType({ type: 0 } as Category);
     }, [])
 
     const onGetData = async (category_id?: string, category_type?: number) => {
@@ -96,11 +121,13 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     }
 
     const onPressType = (data?: Category) => {
+        const typeValue = data?.type ?? 0;
+        setSelectedType(typeValue);
         if (data?.type_expense) {
             onGetData(data?.id);
             refChart.current?.setColor(getColorCategory(data.type_expense))
         } else {
-            onGetData('', data?.type);
+            onGetData('', typeValue);
             refChart.current?.setColor(COLOR_APP.green)
         }
     }
@@ -109,13 +136,13 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
         const { type, category_id } = data;
         const newCateories = [...categories];
         newCateories.forEach(item => {
-            if(item.id == category_id){
+            if (item.id == category_id) {
                 item.total_value -= data.total_value;
             }
         })
 
         data_base.current.forEach(item => {
-            if(item.type == type){
+            if (item.type == type) {
                 item.total_value -= data.total_value;
             }
         })
@@ -123,10 +150,24 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     }
 
     const onDelete = async (data: InfoTransaction) => {
+        // Show confirmation popup
+        refPopupConfirm.current?.onShow({
+            title: 'Bạn có chắc chắn muốn xóa giao dịch này không?',
+            onConfirm: () => confirmDelete(data),
+        });
+    }
+
+    const confirmDelete = async (data: InfoTransaction) => {
         const dataJson = await deleteTransaction(data.id);
         if (dataJson.success) {
             setDataList(prev => prev.filter(i => i.id !== data.id));
             onChangeInfo(data);
+            
+            // Update chart with negative value to subtract
+            updateChartData(key_assets.expense, -Number(data.total_value), { date_buy: data.date_buy, type: data.type });
+            
+            // Update infoAsset in store
+            updateInfoAssetValue(Number(data.total_value), data.type);
         }
     }
 
@@ -162,11 +203,12 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
                     <View style={styles.box_overview}>
                         {
                             data_base.current.map((item, index) => {
+                                const isSelected = item.type === selectedType;
                                 return <BoxMoney
                                     onPress={onPressType}
-                                    style_box={item.type === 0 && { backgroundColor: '#009900' }}
+                                    style_box={item.type === 0 && { backgroundColor: isSelected ? '#009900' : '#e0e0e0' }}
                                     style={{ flex: 1 }} data={item}
-                                    style_txt={item.type === 0 && { color: '#fff' }}
+                                    style_txt={item.type === 0 && { color: isSelected ? '#fff' : '#666' }}
                                     key={index} />
                             })
                         }
@@ -197,19 +239,26 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     }, [categories])
 
     return (
-        <View style={styles.container}>
-            <HeaderView onBack={onBack} title={'Khoản chi tiêu'} />
-            <FlatList
-                ListHeaderComponent={renderHeader}
-                renderItem={renderItem}
-                ItemSeparatorComponent={() => <LineList style={styles.line} />}
-                data={dataList}
-                keyExtractor={keyExtractor_}
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}>
 
-                ListEmptyComponent={<EmptyView />}
-            />
-            <PopupFormExpense onRefresh={onRefresh} ref={refPopupForm} />
-        </View>
+            <View style={styles.container}>
+                <HeaderView onBack={onBack} title={'Khoản chi tiêu'} />
+                <FlatList
+                    ListHeaderComponent={renderHeader}
+                    renderItem={renderItem}
+                    ItemSeparatorComponent={() => <LineList style={styles.line} />}
+                    data={dataList}
+                    keyExtractor={keyExtractor_}
+
+                    ListEmptyComponent={<EmptyView />}
+                />
+                <PopupFormExpense onRefresh={onRefresh} ref={refPopupForm} />
+                <PopupConfirm ref={refPopupConfirm} />
+                <PopupToast ref={refPopupToast} />
+            </View>
+        </KeyboardAvoidingView>
     )
 }
 

@@ -4,6 +4,7 @@ import VirtualButton from '@/components/common/VirtualButton';
 import { key_assets } from '@/constants/constants';
 import { getInfoUser } from '@/services/Api/get.services';
 import { useUserStore } from '@/store/main.store';
+import { InfoUser } from '@/types/info.types';
 import { MainTabScreenProps } from '@/types/navigation.types';
 import { Asset } from '@/types/schema.types';
 import React, { useEffect } from 'react';
@@ -14,10 +15,13 @@ import RecentBox from './RecentBox';
 
 export default function HomeScreen({ navigation, route }: MainTabScreenProps<'Home'>) {
   const insets = useSafeAreaInsets();
-  const infoUser = useUserStore(state => state.infoUser);
   const setInfoUser = useUserStore(state => state.setInfoUser);
+  const setInfoAsset = useUserStore(state => state.setInfoAsset);
   const uid = useUserStore(state => state.uid);
-  const assets = infoUser?.assets || [];
+  const infoAsset = useUserStore(state => state.infoAsset);
+  
+  // Convert infoAsset object to array and sort by stt
+  const assets = Object.values(infoAsset || {}).sort((a, b) => (a.stt || 0) - (b.stt || 0));
 
   useEffect(() => {
     getInfo();
@@ -26,7 +30,10 @@ export default function HomeScreen({ navigation, route }: MainTabScreenProps<'Ho
   const getInfo = async () => {
     const data = await getInfoUser(uid);
     if(data.success && data.data){
-      setInfoUser(data.data)
+      const dataUser = data.data as InfoUser;
+      const assets = data.data.assets || [];
+      setInfoAsset(assets);
+      setInfoUser(dataUser)
     }
   }
 

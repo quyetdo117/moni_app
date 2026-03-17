@@ -2,13 +2,14 @@ import { auth, db } from "@/configs/firebaseConfig";
 import { key_assets, tables_name } from "@/constants/constants";
 import { LoginForm, RegisterForm } from "@/screens/LoginScreen/LoginScreen.types";
 import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword } from "@firebase/auth";
-import { doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
+import moment from "moment";
 import { assets_init, categories_expense_init } from "../InitData/InitData";
 import { getNewDocRef } from "./base.services";
 
 const createInitData = async <T extends RegisterForm>(uid: string, data: T) => {
     const batch = writeBatch(db);
-    const timestamp = serverTimestamp();
+    const timestamp = moment(new Date()).unix();
 
     const { email, name } = data;
 
@@ -19,9 +20,6 @@ const createInitData = async <T extends RegisterForm>(uid: string, data: T) => {
         uid: uid,
         email: email,
         name: name,
-        total_expense: 0,
-        total_invest: 0,
-        total_save: 0,
         createdAt: timestamp
     });
 

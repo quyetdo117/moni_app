@@ -2,17 +2,14 @@
 import { COLOR_APP, key_assets, types_expense } from '@/constants/constants'
 import { getCategories } from '@/services/Api/get.services'
 import { createTransactionExpense, updateTransaction } from '@/services/Api/transaction.services'
-import { useUserStore } from '@/store/main.store'
+import { useChartStore, useUserStore } from '@/store/main.store'
 import { Category } from '@/types/schema.types'
 import { PopupRef } from '@/types/view.types'
-import { line_min } from '@/utils/calculate'
-import { commonStyles } from '@/utils/styles_shadow'
-import RNBounceable from '@freakycoder/react-native-bounceable'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import moment from 'moment'
 import React, { Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown'
 import { DataFormExpense } from '../types/Expense.types'
 
@@ -35,21 +32,40 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
     const bottomSheetRef = useRef<BottomSheet>(null);
     const [dataType, setType] = useState<dataOption>(types_expense[0]);
     const [dataCategory, setCategory] = useState<Category | null>(null);
-    const refInput = useRef<Record<string, TextInput | null>>({});
     const uid = useUserStore(state => state.uid);
     const infoAsset = useUserStore(state => state.infoAsset);
+    const setInfoAsset = useUserStore(state => state.setInfoAsset);
     const [isOpen, setOpen] = useState(false);
     const isEdit = useRef(false);
     const isSelect = useRef(false);
+    const oldDataRef = useRef<DataFormExpense | null>(null);
+    const updateChartData = useChartStore(state => state.updateChartData);
+
+    // Hàm dùng chung để cập nhật infoAsset
+    const updateInfoAssetValue = (valueChange: number, transactionType: number) => {
+        const currentExpenseAsset = infoAsset?.[key_assets.expense];
+        if (!currentExpenseAsset) return;
+
+        // Xác định giá trị thay đổi dựa trên type giao dịch
+        // transactionType = 1 (IN/Thu nhập) -> cộng vào
+        // transactionType = 0 (OUT/Chi tiêu) -> trừ đi
+        const actualChange = transactionType === 1 ? valueChange : -valueChange;
+
+        const updatedAsset = {
+            ...currentExpenseAsset,
+            total_value: Number(currentExpenseAsset.total_value || 0) + actualChange
+        };
+        setInfoAsset([updatedAsset]);
+    };
 
 
     const initData = {
         type: 1,
         name: '',
-        total_value: 0,
+        total_value: '',
         date_buy: moment(new Date()).unix(),
         note: '',
-        asset_id: infoAsset.expense || '',
+        asset_id: infoAsset?.expense?.id || '',
         category_id: '',
         user_id: uid,
     }
@@ -59,7 +75,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
     const date_ = new Date(date_buy * 1000);
     const dataStr = moment(date_buy * 1000).format('DD/MM/YYYY')
 
-    const snapPoints = useMemo(() => ['50%', '90%'], []);
+    const snapPoints = useMemo(() => ['70%'], []);
 
     useEffect(() => {
         getListCate();
@@ -98,10 +114,12 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         // edit
         isEdit.current = isEdit_;
         if (data) {
+            // Store old data for update
+            oldDataRef.current = data;
             const { category_id, type } = data
             setDataForm(data);
             const dataCate = listCate.find(item => item.id == category_id);
-            if(dataCate){
+            if (dataCate) {
                 setCategory(dataCate);
                 onSetType(type);
             }
@@ -157,16 +175,20 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             ...dataForm,
             [type]: value
         })
-
     }
 
     const onUpdate = async () => {
         if (name && total_value && date_buy) {
             const jsonCreate = await updateTransaction(dataForm)
             console.log('loggg dataForm', JSON.stringify(dataForm));
-            if(jsonCreate.success){
+            if (jsonCreate.success) {
+                // Calculate value change: new - old
+                const valueChange = Number(total_value) - Number(oldDataRef.current?.total_value || 0);
+                // Update chart with the difference
+                updateChartData(key_assets.expense, valueChange, { date_buy: dataForm.date_buy, type: dataForm.type });
+                // Update infoAsset
+                updateInfoAssetValue(valueChange, dataForm.type);
                 onClose();
-                onRefresh();
             }
         } else {
             Alert.alert('Nhap du thong tin!', JSON.stringify(dataForm))
@@ -177,9 +199,12 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         if (name && total_value && date_buy) {
             const jsonCreate = await createTransactionExpense(dataForm)
             console.log('loggg dataForm', JSON.stringify(dataForm));
-            if(jsonCreate.success){
+            if (jsonCreate.success) {
+                // Add new value
+                updateChartData(key_assets.expense, Number(total_value), { date_buy: dataForm.date_buy, type: dataForm.type });
+                // Update infoAsset
+                updateInfoAssetValue(Number(total_value), dataForm.type);
                 onClose();
-                onRefresh();
             }
         } else {
             Alert.alert('Nhap du thong tin!', JSON.stringify(dataForm))
@@ -197,10 +222,35 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             case 'type': return 'Loại giao dịch';
             case 'total_value': return 'Số tiền';
             case 'date_buy': return 'Ngày';
-            case 'note': return 'Note';
-
+            case 'note': return 'Ghi chú';
             default: return '';
         }
+    }
+
+    const renderField = (type: string, isNote: boolean = false) => {
+        const isString = type === 'note' || type === 'name';
+        const isDate = type === 'date_buy';
+        return (
+            <>
+                <Text style={styles.label}>{onGetTitle(type)}</Text>
+                {isDate ? (
+                    <TouchableOpacity style={styles.dateButton} onPress={() => openShowDate()}>
+                        <Text style={styles.dateText}>{onGetValue(type)}</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TextInput
+                        style={[styles.input, isNote && styles.noteInput]}
+                        value={onGetValue(type)}
+                        onChangeText={(txt) => {
+                            onChangeText(txt, type);
+                        }}
+                        keyboardType={isString ? 'default' : 'numeric'}
+                        placeholder={`Nhập ${onGetTitle(type).toLowerCase()}`}
+                        multiline={isNote}
+                    />
+                )}
+            </>
+        );
     }
 
     const onGetValue = (type: string) => {
@@ -210,52 +260,8 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             case 'total_value': return total_value.toString();
             case 'date_buy': return dataStr;
             case 'note': return note;
-
             default: return '';
         }
-    }
-
-    const onPressBoxInput = (type: string) => {
-        if (type == 'date_buy') {
-            openShowDate();
-        } else {
-            if (refInput.current[type]) {
-                refInput.current[type].focus();
-            }
-        }
-    }
-
-    const renderBoxInput = (type: string, isRight?: boolean) => {
-        const isString = type == 'note' || type == 'name';
-        const isDate = type == 'date_buy';
-        return (
-            <RNBounceable style={[styles.box_input,
-            commonStyles.box_shadow_transaction,
-            isRight && { marginLeft: 10 }]}
-                onPress={() => {
-                    onPressBoxInput(type);
-                }}
-            >
-                <Text style={styles.title_input}>{onGetTitle(type)}</Text>
-                <View style={[styles.box_txt]}>
-                    <TextInput
-                        ref={(el) => { refInput.current[type] = el }}
-                        keyboardType={isString ? 'default' : 'numeric'}
-                        readOnly={isDate ? true : false}
-                        placeholder='Nhập ...'
-                        value={onGetValue(type)}
-                        onChangeText={(txt) => {
-                            let newTxt = txt;
-                            if (!isString && newTxt[0] == '0') {
-                                newTxt = Number(newTxt).toString();
-                            }
-                            onChangeText(newTxt, type)
-                        }}
-                    // value=''
-                    />
-                </View>
-            </RNBounceable>
-        )
     }
 
     const renderItemDrop = (item: dataOption, selected?: boolean) => {
@@ -285,13 +291,22 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         }
     }
 
-    const renderBoxOption = (isCategory?: boolean) => {
-
+    const renderTypeBox = () => {
         return (
-            <View style={[styles.box_input,
-            commonStyles.box_shadow_transaction, { marginLeft: 10 }]}>
-                <Text style={styles.title_input}>{isCategory ? 'Danh mục' : 'Loại giao dịch'}</Text>
-                <View style={[styles.box_txt]}>
+            <>
+                <Text style={styles.label}>{'Loại giao dịch'}</Text>
+                <View style={[styles.input, styles.typeBox, styles.typeBoxDisabled]}>
+                    <Text style={styles.typeText}>{dataType.title}</Text>
+                </View>
+            </>
+        )
+    }
+
+    const renderBoxOption = (isCategory?: boolean) => {
+        return (
+            <>
+                <Text style={styles.label}>{isCategory ? 'Danh mục' : 'Loại giao dịch'}</Text>
+                <View style={styles.input}>
                     <Dropdown
                         data={isCategory ? listCate : types_expense}
                         disable={!isCategory && !isSelect.current}
@@ -299,14 +314,13 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
                         valueField={isCategory ? "name" : "title"}
                         renderItem={renderItemDrop}
                         placeholder="Chọn một mục..."
-                        style={styles.box_option}
                         value={isCategory ? dataCategory : dataType}
                         onChange={item => {
                             onChangeType(item, isCategory);
                         }}
                     />
                 </View>
-            </View>
+            </>
         )
     }
 
@@ -323,37 +337,26 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             }}
             backdropComponent={renderBackdrop}
         >
-            <View style={styles.header}>
+            <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
                 <Text style={styles.title}>{isEdit.current ? "Chỉnh sửa" : 'Nhập thông tin'}</Text>
-                <RNBounceable onPress={isEdit.current ? onUpdate : onCreate}>
-                    <Text style={styles.txt_create}>{isEdit.current ? 'Lưu' : 'Tạo'}</Text>
-                </RNBounceable>
-            </View>
-            <BottomSheetScrollView>
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('name')
-                    }
-                    {
-                        renderBoxOption(true)
-                    }
-                </View>
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('total_value')
-                    }
-                    {
-                        renderBoxOption()
-                    }
-                </View>
-                <View style={styles.row}>
-                    {
-                        renderBoxInput('date_buy')
-                    }
-                    {
-                        renderBoxInput('note', true)
-                    }
-                </View>
+
+                {/* Name */}
+                {renderField('name')}
+
+                {/* Category */}
+                {renderBoxOption(true)}
+
+                {/* Total Value */}
+                {renderField('total_value')}
+
+                {/* Type */}
+                {renderTypeBox()}
+
+                {/* Date */}
+                {renderField('date_buy')}
+
+                {/* Note */}
+                {renderField('note', true)}
 
                 {isOpen && (
                     <DateTimePicker
@@ -361,10 +364,13 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
                         mode="date"
                         display="default"
                         onChange={onChangeDate}
-
                     />
                 )}
             </BottomSheetScrollView>
+            {/* Save Button */}
+            <TouchableOpacity style={styles.saveButton} onPress={isEdit.current ? onUpdate : onCreate}>
+                <Text style={styles.saveButtonText}>{isEdit.current ? 'Lưu' : 'Tạo'}</Text>
+            </TouchableOpacity>
         </BottomSheet>
     )
 }
@@ -374,60 +380,57 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
 export default PopupFormExpense;
 
 const styles = StyleSheet.create({
-    box_name: {
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        marginHorizontal: 10,
-        marginVertical: 5,
-        paddingHorizontal: 5
+    contentContainer: {
+        marginHorizontal: 20
     },
-    name_txt: {
-        color: '#7c7c7c',
+    label: {
         fontSize: 14,
-        marginLeft: 10
+        fontWeight: '600',
+        marginTop: 10,
+        marginBottom: 5,
     },
-    txt_name: {
+    input: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 10,
+        fontSize: 14,
+    },
+    noteInput: {
+        height: 80,
+        textAlignVertical: 'top',
+    },
+    dateButton: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 12,
+    },
+    dateText: {
+        fontSize: 14,
+    },
+    saveButton: {
+        backgroundColor: COLOR_APP.blue,
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 5,
+        marginBottom: 40,
+        marginHorizontal: 20
+    },
+    saveButtonText: {
+        color: '#fff',
         fontSize: 16,
-        fontWeight: '600'
-    },
-    box_input: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 10,
-        padding: 10
-    },
-    txt_input: {
-        fontSize: 14,
-        fontWeight: '600'
-    },
-    row: {
-        flexDirection: 'row',
-        marginHorizontal: 10,
-        marginVertical: 5
-    },
-    box_txt: {
-        borderWidth: line_min,
-        borderColor: '#dbdbdb',
-        borderRadius: 5,
-        backgroundColor: '#fff',
-        paddingHorizontal: 5
+        fontWeight: '600',
     },
     title: {
-        color: '#000',
         fontSize: 18,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        textAlign: 'center'
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginHorizontal: 10,
-        marginBottom: 20
-    },
-    txt_create: {
-        color: COLOR_APP.blue,
-        fontWeight: '600',
-        fontSize: 16
+        marginHorizontal: 20,
+        marginBottom: 10
     },
     item_list: {
         paddingHorizontal: 10,
@@ -438,13 +441,15 @@ const styles = StyleSheet.create({
         color: '#000',
         fontWeight: '600'
     },
-    box_option: {
-        paddingVertical: 10
+    typeBox: {
+        justifyContent: 'center',
     },
-    title_input: {
-        color: '#000',
+    typeBoxDisabled: {
+        backgroundColor: '#f5f5f5e7',
+        borderColor: '#e0e0e0',
+    },
+    typeText: {
         fontSize: 14,
-        marginBottom: 3,
-        fontWeight: '600'
+        color: '#666',
     }
 })

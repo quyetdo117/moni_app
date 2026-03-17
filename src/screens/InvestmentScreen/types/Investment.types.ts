@@ -1,11 +1,8 @@
-export interface DataInvestItem {
-    id: number | string;
-    title: string;
-    value_origin: number;
-    value_current: number;
-    date_buy: string;
-    note: string,
-    transactions: DataTransaction[]
+import { Category } from "@/types/schema.types";
+
+export interface DataInvestItem extends Category {
+    createdAt?: number;
+    total_market: number;
 }
 
 export interface DataTransaction {
@@ -23,14 +20,13 @@ export interface DataTransaction {
 export interface DataFormInvest {
     type: number;
     name: string,
-    quantity: number,
-    rate_value: number,
-    market_value: number,
-    extra_value?: number,
-    total_value: number,
+    quantity: string,
+    rate_value: string,
+    market_value: string,
+    total_value: string,
     date_buy: number,
     note?: string,
     category_id?: string,
-    type_asset: string,
+    asset_id: string,
     user_id: string
 }
