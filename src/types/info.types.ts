@@ -5,7 +5,7 @@ export interface InfoUser extends User {
 }
 
 export interface InfoTransaction extends Transaction {
-  type_expense?: number
+  type_display: number
 }
 
 export interface InfoAsset extends Asset {

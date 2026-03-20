@@ -86,6 +86,10 @@ export const getColorCategory = (type: number): string => {
         result = '#06a101'
     } else if (type === 6) {
         result = '#2f3030'
+    }else if (type === 7) {
+        result = '#e0dd02'
+    } else if (type === 8) {
+        result = '#01ec3c'
     }
     return result
 }
@@ -113,4 +117,15 @@ export const tables_name = {
     ASSET: 'Assets',
     CATEGORY: 'Categories',
     TRANSACTION: 'Transactions'
+}
+
+export const types_display = {
+    move: 1,
+    personal: 2,
+    fixed: 3,
+    food: 4,
+    income: 5,
+    other_expense: 6,
+    invest: 7,
+    save: 8
 }

@@ -19,6 +19,8 @@ export interface ListItem {
     setListExpense: (data: InfoTransaction[]) => void;
     listInvest: DataInvestItem[],
     setListInvest: (data: DataInvestItem[]) => void;
+    listSave: InfoTransaction[],
+    setListSave: (data: InfoTransaction[]) => void;
 }
 
 export interface ChartStore {

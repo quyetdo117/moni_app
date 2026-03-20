@@ -10,6 +10,7 @@ export type RootStackParamList = {
     Login: undefined;
     InvestmentScreen: undefined;
     InvestmentDetailScreen: {data: DataInvestItem};
+    SaveScreen: undefined;
 };
 
 export type MainTabParamList = {

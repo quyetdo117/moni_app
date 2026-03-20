@@ -1,20 +1,30 @@
 import { db } from "@/configs/firebaseConfig";
 import { key_assets, tables_name, TYPE_TRANSACTION } from "@/constants/constants";
 import { InfoAsset } from "@/types/info.types";
-import { Asset, Category, Transaction, User } from "@/types/schema.types";
+import { Asset, Category, Transaction } from "@/types/schema.types";
 import { collection, doc, getAggregateFromServer, getDoc, getDocs, limit, orderBy, query, QueryConstraint, sum, where } from "firebase/firestore";
 import { getDocumentRef, getTableRef } from "./base.services";
 
 /// Lay danh sach Categories
 
-export const getCategories = async (type: string, uid: string) => {
+export const getCategories = async ({ asset_id, type }: { asset_id?: string, type: string }, uid?: string) => {
     try {
+        let assetData: Asset | null = null;
+
+        // Nếu không có asset_id thì mới lấy từ getAssetForType
+        if (!asset_id) {
+            if (!uid) throw new Error("Thieu uid");
+            assetData = await getAssetForType(type, uid);
+            if (!assetData) throw new Error("Khong tim thay Asset!");
+        }
+
         const categoriesRef = collection(db, tables_name.CATEGORY);
-        const assetData = await getAssetForType(type, uid);
-        if (!assetData) throw new Error("Khong tim thay Asset!");
-        const constraints: QueryConstraint[] = [where('asset_id', '==', assetData.id)];
+        const targetAssetId = asset_id || assetData?.id;
+        if (!targetAssetId) throw new Error("Khong tim thay Asset!");
+
+        const constraints: QueryConstraint[] = [where('asset_id', '==', targetAssetId)];
         if (type == key_assets.expense) {
-            constraints.push(orderBy('type_expense', 'asc'))
+            constraints.push(orderBy('type_display', 'asc'))
         }
         const q = query(categoriesRef,
             ...constraints
@@ -57,43 +67,42 @@ export const getAssetForType = async (type: string, uid: string) => {
 
 // Danh sach giao dich
 
-export const getListTransaction = async (uid: string, type?: string, category_id?: string, category_type?: number) => {
+export const getListTransaction = async (uid: string, asset_id?: string, category_id?: string, category_type?: number) => {
     try {
-        const categoriesRef = getTableRef(tables_name.TRANSACTION);
+        const transactonsRef = getTableRef(tables_name.TRANSACTION);
         const objectCategories: Record<string, number> = {};
         const constraints = [];
-        if (type) {
-            const assetData = await getAssetForType(type, uid);
-            if (!assetData) throw new Error("Khong tim thay Asset!");
-            constraints.push(where('asset_id', '==', assetData.id))
+
+
+        // Nếu có asset_id thì sử dụng trực tiếp
+        let dataAsset;
+        if (asset_id) {
+            constraints.push(where('asset_id', '==', asset_id));
+            const assetRef = getDocumentRef(tables_name.ASSET, asset_id);
+            const snapAsset = await getDoc(assetRef);
+            if (!snapAsset.exists()) throw Error('Khong tim thay Asset');
+            dataAsset = snapAsset.data() as Asset;
+        } else {
+            dataAsset = await getAssetForType(key_assets.expense, uid);
+        }
+        if (dataAsset?.type == key_assets.expense) {
+            const jsonCategories = await getCategories({ asset_id: asset_id, type: key_assets.expense }, uid);
+            if (jsonCategories.success) {
+                const categories = jsonCategories.data || [];
+                categories.forEach(item => {
+                    objectCategories[item.id] = Number(item.type_display || 0);
+                });
+            } else {
+                throw new Error("Khong lay duoc Categories!");
+            }
         }
         if (category_id) {
-            constraints.push(where('category_id', '==', category_id));
-        }
-        if (type == key_assets.expense || !type) {
-            if (category_id && type == key_assets.expense) {
-                const categoryRef = getDocumentRef(tables_name.CATEGORY, category_id);
-                const categorySnap = await getDoc(categoryRef);
-                if (categorySnap.exists()) {
-                    const dataCategory = categorySnap.data() as Category;
-                    objectCategories[category_id] = Number(dataCategory.type_expense || 0);
-                }
-            } else {
-                const jsonCategories = await getCategories(key_assets.expense, uid)
-                if (jsonCategories.success) {
-                    const categories = jsonCategories.data || [];
-                    categories.forEach(item => {
-                        objectCategories[item.id] = Number(item.type_expense || 0)
-                    })
-                } else {
-                    throw new Error("Khong lay duoc Categories!");
-                }
-            }
+            constraints.push(where('category_id', '==', category_id))
         }
         if (typeof category_type === 'number') {
             constraints.push(where('type', '==', category_type))
         }
-        const q = query(categoriesRef,
+        const q = query(transactonsRef,
             ...constraints,
             where('user_id', '==', uid),
             orderBy('date_buy', 'desc'));
@@ -103,7 +112,7 @@ export const getListTransaction = async (uid: string, type?: string, category_id
             return {
                 ...rawData,
                 // Gán thông tin phụ trợ, mặc định là 0 nếu không tìm thấy
-                type_expense: Number(objectCategories[rawData.category_id] || 0)
+                type_display: Number(objectCategories[rawData.category_id] || 0)
             };
         });
         return { success: true, data, msg: 'done' };
@@ -177,29 +186,27 @@ export const getInfoUser = async (id: string) => {
 
 // Lay thong tin tong quart chi tieu
 
-export const getInfoExpense = async (uid: string) => {
+export const getInfoExpense = async (id: string) => {
     try {
         const transactionsRef = collection(db, tables_name.TRANSACTION);
-        const assetData = await getAssetForType(key_assets.expense, uid);
-        if (!assetData) throw new Error("Khong tim thay Asset!");
-        const userRef = doc(db, tables_name.USER, uid)
+        const assetRef = getDocumentRef(tables_name.ASSET, id)
         const q = query(transactionsRef,
-            where('asset_id', '==', assetData.id)
+            where('asset_id', '==', id)
         );
 
-        const [userSnap, querySnap, categories] = await Promise.all([
-            getDoc(userRef),
+        const [querySnap, categories, assetSnap] = await Promise.all([
             getDocs(q),
-            getCategories(key_assets.expense, uid)
+            getCategories({ asset_id: id, type: key_assets.expense }),
+            getDoc(assetRef)
         ]);
-        console.log('logg uid', uid)
         if (!categories.success) {
             throw new Error('Lay danh muc that bai!')
-        } else if (!userSnap.exists()) {
-            throw new Error('User khong ton tai')
+        }
+        if (!assetSnap.exists()) {
+            throw new Error('Asset khong ton tai')
         }
 
-        const dataUser = userSnap.data() as User;
+        const assetData = assetSnap.data() as Asset;
 
         const total_money = assetData ? assetData.total_value : 0;
 

@@ -4,35 +4,21 @@ import ItemPayment from '@/components/items/ItemPayment';
 import { getListTransaction } from '@/services/Api/get.services';
 import { useUserStore } from '@/store/main.store';
 import { InfoTransaction } from '@/types/info.types';
-import { RefreshableRef } from '@/types/view.types';
 import { commonStyles } from '@/utils/styles_shadow';
-import React, { Ref, useEffect, useImperativeHandle, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-interface RecentBoxProps {
-  type?: string,
-  ref?: Ref<RefreshableRef>
-}
-
-export default function RecentBox({ type, ref }: RecentBoxProps) {
+export default function RecentBox() {
 
   const [dataList, setDataList] = useState<InfoTransaction[]>([]);
   const uid = useUserStore(state => state.uid);
 
   useEffect(() => {
-    onGetData();
+    getData();
   }, []);
 
-  const onRefresh = (id?: string, category_type?: number) => {
-    onGetData(id, category_type);
-  }
-
-  useImperativeHandle(ref, () => ({
-    onRefresh
-  }));
-
-  const onGetData = async (category_id?: string, category_type?: number) => {
-    const data = await getListTransaction(uid, type, category_id, category_type);
+  const getData = async () => {
+    const data = await getListTransaction(uid);
     if (data.success) {
       const listData = data?.data as InfoTransaction[] || [];
       setDataList(listData);

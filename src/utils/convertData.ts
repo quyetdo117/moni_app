@@ -1,6 +1,25 @@
+import { getColorCategory, types_display } from "@/constants/constants";
 import { ChartTransacion } from "@/screens/ExpenseScreen/items/ChartPayment";
 import { Transaction } from "@/types/schema.types";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import Fontisto from '@expo/vector-icons/Fontisto';
+import Ionicons from "@expo/vector-icons/Ionicons";
 import moment from "moment";
+import React from "react";
+import { StyleSheet } from "react-native";
+
+/**
+ * Calculate ROI (Return on Investment)
+ */
+export const calculateROI = (capital: number, currentValue: number): number => {
+  if (!capital || capital === 0) return 0;
+
+  const roi = ((currentValue - capital) / capital) * 100;
+  return Math.round(roi * 100) / 100;
+};
+
+export const line_min = StyleSheet.hairlineWidth
 
 /**
  * Định dạng số thành tiền tệ VND
@@ -87,6 +106,44 @@ export const formatChartData = (
     const dataDate: ChartTransacion = { value: valueData };
     dataChart.push(dataDate);
   }
-  
+   
   return dataChart;
-} 
+}
+
+/**
+ * Interface for icon data returned by getIconByTypeDisplay
+ */
+export interface IconData {
+  name: string;
+  library: React.ComponentType<any>;
+  color: string;
+}
+
+/**
+ * Get icon name based on type_display from constants.ts
+ * @param typeDisplay - The type_display value from types_display
+ * @returns IconData object containing icon name and icon library
+ */
+
+export const getIconByTypeDisplay = (typeDisplay: number): IconData => {
+  switch (typeDisplay) {
+    case types_display.move:
+      return { name: 'car', library: Ionicons, color: getColorCategory(typeDisplay) };
+    case types_display.personal:
+      return { name: 'person', library: Ionicons, color: getColorCategory(typeDisplay) };
+    case types_display.fixed:
+      return { name: 'home', library: AntDesign, color: getColorCategory(typeDisplay) };
+    case types_display.food:
+      return { name: 'restaurant', library: Ionicons, color: getColorCategory(typeDisplay) };
+    case types_display.income:
+      return { name: 'sack-dollar', library: FontAwesome6, color: getColorCategory(typeDisplay) };
+    case types_display.other_expense:
+      return { name: 'ellipsis-horizontal', library: Ionicons, color: getColorCategory(typeDisplay) };
+    case types_display.invest:
+      return { name: 'gold', library: AntDesign, color: getColorCategory(typeDisplay) };
+    case types_display.save:
+      return { name: 'wallet', library: Fontisto, color: getColorCategory(typeDisplay) };
+    default:
+      return { name: 'help-circle', library: Ionicons, color: '#000' };
+  }
+}; 

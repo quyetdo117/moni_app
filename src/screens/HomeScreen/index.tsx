@@ -43,6 +43,8 @@ export default function HomeScreen({ navigation, route }: MainTabScreenProps<'Ho
       navigation.navigate('ExpenseScreen')
     } else if (type == key_assets.invest){
       navigation.navigate('InvestmentScreen')
+    } else if (type == key_assets.save){
+      navigation.navigate('SaveScreen')
     }
   }
 

@@ -1,5 +1,5 @@
 import { commonStyles } from '@/utils/styles_shadow';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -7,25 +7,32 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface HeaderProps {
     title: string,
-    onBack?: Function
+    onBack?: Function,
+    isCenter?: boolean
 }
 
-export default function HeaderView({ title, onBack}: HeaderProps) {
+export default function HeaderView({ title, onBack, isCenter }: HeaderProps) {
     const insets = useSafeAreaInsets();
 
     const onPressBack = () => {
-        if(onBack){
+        if (onBack) {
             onBack()
         }
     }
 
     return (
-        <View style={[{paddingTop: insets.top}, styles.header, commonStyles.box_shadow]}>
+        <View style={[{ paddingTop: insets.top },
+        styles.header,
+        commonStyles.box_shadow
+        ]}>
             <RNBounceable onPress={onPressBack}>
-                <AntDesign name="arrow-left" size={22} color="black" />
+               <Ionicons name="chevron-back" size={24} color="black" />
             </RNBounceable>
-            <Text style={styles.title}>{title}</Text>
-            <View style={{width: 22}}/>
+            <View style={[{flex: 1, marginLeft: 10},
+                isCenter ? {alignItems: 'center'} : null]}>
+                <Text style={styles.title}>{title}</Text>
+            </View>
+            <View style={{ width: 22 }} />
         </View>
     )
 }
@@ -41,8 +48,8 @@ const styles = StyleSheet.create({
     },
     title: {
         color: '#000',
-        fontSize: 20,
-        fontWeight: '600'
-        
+        fontSize: 25,
+        fontWeight: 'bold'
+
     }
 })

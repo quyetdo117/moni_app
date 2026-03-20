@@ -4,42 +4,42 @@ export const categories_expense_init = [
         name: 'Di chuyển',
         total_value: 0,
         type: 0, // thu/chi
-        type_expense: 1, // set color
+        type_display: 1, // set color
     },
     {
         user_id: '',
         name: 'Cá nhân',
         total_value: 0,
         type: 0, // thu/chi
-        type_expense: 2 // set color
+        type_display: 2 // set color
     },
     {
         user_id: '',
         name: 'Cố định',
         total_value: 0,
         type: 0, // thu/chi
-        type_expense: 3 // set color
+        type_display: 3 // set color
     },
     {
         user_id: '',
         name: 'Ăn uống',
         total_value: 0,
         type: 0, // thu/chi
-        type_expense: 4 // set color,
+        type_display: 4 // set color,
     },
     {
         user_id: '',
         name: 'Thu nhập',
         total_value: 0,
         type: 1, // thu/chi
-        type_expense: 5 // set color
+        type_display: 5 // set color
     },
     {
         user_id: '',
         name: 'Khác',
         total_value: 0,
         type: 0, // thu/chi
-        type_expense: 6 // set color
+        type_display: 6 // set color
     }
 ]
 

@@ -1,8 +1,7 @@
-import { COLOR_APP, getColorCategory, TYPE_TRANSACTION } from '@/constants/constants';
+import { COLOR_APP, TYPE_TRANSACTION } from '@/constants/constants';
 import { useUserStore } from '@/store/main.store';
 import { InfoTransaction } from '@/types/info.types';
-import { formatSmartMoney } from '@/utils/format';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { formatSmartMoney, getIconByTypeDisplay } from '@/utils/convertData';
 import moment from 'moment';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -14,7 +13,7 @@ interface dataPayment {
 export default function ItemPayment({ data }: dataPayment) {
   const infoAsset = useUserStore(state => state.infoAsset);
 
-  const { type, date_buy, type_expense, asset_id } = data;
+  const { type, date_buy, type_display, asset_id } = data;
 
   const isInvest = asset_id === infoAsset.invest?.id;
   const isExpense = asset_id === infoAsset.expense?.id;
@@ -23,16 +22,16 @@ export default function ItemPayment({ data }: dataPayment) {
     ? COLOR_APP.green : COLOR_APP.red;
   const prefix = (type == TYPE_TRANSACTION.IN && isExpense) || (type == TYPE_TRANSACTION.OUT && isInvest)
     ? '+' : '-';
+
+  const infoIcon = getIconByTypeDisplay(type_display);
+  const {name, library, color} = infoIcon;
+  const IconCategory = library;
+  console.log('logg icon', color)
   return (
     <View style={[styles.container]}>
       <View style={[styles.row, { marginBottom: 2 }]}>
         <View style={[styles.row, { alignItems: 'center' }]}>
-          {
-            isInvest ?
-              <FontAwesome6 name="coins" size={16} color={COLOR_APP.yellow} />
-              : null
-          }
-          {type_expense ? <View style={[styles.point, { backgroundColor: getColorCategory(type_expense) }]} /> : null}
+          <IconCategory size={20} name={name} color={color} />
           <Text style={[styles.title]}>{
             data.name
           }</Text>

@@ -42,7 +42,6 @@ const data_init = [
 ]
 
 export default function InvestmentScreen({ navigation }: RootStackScreenProps<'InvestmentScreen'>) {
-    const PopupRef = useRef<PopupRef>(null);
     const PopupFormRef = useRef<PopupRef>(null);
     const infoAsset = useUserStore(state => state.infoAsset);
     const setListInvest = useListStore(state => state.setListInvest);
@@ -67,7 +66,8 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
 
     const getList = async () => {
         try {
-            const jsonData = await getCategories(key_assets.invest, uid);
+            const dataBody = {asset_id: infoAsset?.invest?.id, type: key_assets.invest}
+            const jsonData = await getCategories(dataBody, uid);
             if (jsonData.success && jsonData.data) {
                 setListInvest(jsonData.data as DataInvestItem[]);
             }

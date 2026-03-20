@@ -21,9 +21,10 @@ export interface Category {
     total_value: number;
     total_market?: number;
     market_value?: number;
+    target_value?: number;
     quantity?: number;
     type: number;
-    type_expense?: number;
+    type_display: number;
     user_id: string;
     date_update: number;
 }

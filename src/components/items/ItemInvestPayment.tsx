@@ -1,6 +1,6 @@
 import { COLOR_APP } from '@/constants/constants';
 import { InfoTransaction } from '@/types/info.types';
-import { formatSmartMoney } from '@/utils/format';
+import { formatSmartMoney } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import moment from 'moment';
 import React from 'react';

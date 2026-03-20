@@ -7,5 +7,6 @@ export interface DataFormExpense  {
     note?: string;
     category_id: string;
     asset_id: string;
-    user_id: string
+    user_id: string;
+    type_display: number
 }

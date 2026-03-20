@@ -1,5 +1,5 @@
 
-import { COLOR_APP, key_assets, types_expense } from '@/constants/constants'
+import { COLOR_APP, key_assets, TYPE_TRANSACTION, types_display, types_expense } from '@/constants/constants'
 import { getCategories } from '@/services/Api/get.services'
 import { createTransactionExpense, updateTransaction } from '@/services/Api/transaction.services'
 import { useChartStore, useUserStore } from '@/store/main.store'
@@ -60,7 +60,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
 
 
     const initData = {
-        type: 1,
+        type: TYPE_TRANSACTION.OUT,
         name: '',
         total_value: '',
         date_buy: moment(new Date()).unix(),
@@ -68,6 +68,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         asset_id: infoAsset?.expense?.id || '',
         category_id: '',
         user_id: uid,
+        type_display: types_display.move
     }
     const [dataForm, setDataForm] = useState<DataFormExpense>(initData);
     const { name, total_value, date_buy } = dataForm;
@@ -82,12 +83,18 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
     }, [])
 
     const getListCate = async () => {
-        const data = await getCategories(key_assets.expense, uid)
+        const dataBody = { asset_id: infoAsset?.expense?.id, type: key_assets.invest }
+        const data = await getCategories(dataBody, uid)
         const dataList = data.data
         if (data.success && dataList) {
             setCategory(dataList[0]);
             onSetType(dataList[0].type);
-            setDataForm({ ...dataForm, category_id: dataList[0].id, type: dataList[0].type })
+            setDataForm({
+                ...dataForm,
+                category_id: dataList[0].id,
+                type: dataList[0].type,
+                type_display: dataList[0].type_display
+            })
             setListCate(dataList)
         } else {
             Alert.alert(data.msg)
@@ -273,22 +280,15 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         )
     }
 
-    const onChangeType = (data: dataOption | Category, isCategory?: boolean) => {
-        if (isCategory) {
-            setCategory(data as Category)
-            onSetType(data.type);
-            setDataForm({
-                ...dataForm,
-                category_id: data.id,
-                type: data.type
-            })
-        } else {
-            setType(data as dataOption)
-            setDataForm({
-                ...dataForm,
-                type: data.type
-            })
-        }
+    const onChangeType = (data: Category) => {
+        setCategory(data)
+        onSetType(data.type);
+        setDataForm({
+            ...dataForm,
+            category_id: data.id,
+            type: data.type,
+            type_display: data.type_display
+        })
     }
 
     const renderTypeBox = () => {
@@ -316,7 +316,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
                         placeholder="Chọn một mục..."
                         value={isCategory ? dataCategory : dataType}
                         onChange={item => {
-                            onChangeType(item, isCategory);
+                            onChangeType(item);
                         }}
                     />
                 </View>

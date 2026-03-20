@@ -1,6 +1,7 @@
 import { auth } from '@/configs/firebaseConfig';
 import InvestmentScreen from '@/screens/InvestmentScreen';
 import InvestmentDetailScreen from '@/screens/InvestmentScreen/InvestmentDetailScreen';
+import SaveScreen from '@/screens/SaveScreen';
 import { useUserStore } from '@/store/main.store';
 import { RootStackParamList } from '@/types/navigation.types';
 import { onAuthStateChanged } from '@firebase/auth';
@@ -55,6 +56,7 @@ const AppNavigator = () => {
             <Stack.Screen name="ExpenseScreen" component={ExpenseScreen} />
             <Stack.Screen name="InvestmentScreen" component={InvestmentScreen} />
             <Stack.Screen name="InvestmentDetailScreen" component={InvestmentDetailScreen} />
+            <Stack.Screen name="SaveScreen" component={SaveScreen} />
           </Stack.Group>
         ) : (
           <Stack.Group>

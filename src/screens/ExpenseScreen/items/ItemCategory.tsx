@@ -1,5 +1,5 @@
 import { Category } from '@/types/schema.types';
-import { formatSmartMoney_2 } from '@/utils/format';
+import { formatSmartMoney_2 } from '@/utils/convertData';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';

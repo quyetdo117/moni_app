@@ -12,8 +12,7 @@ import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
 import { InfoTransaction } from '@/types/info.types';
 import { RootStackScreenProps } from '@/types/navigation.types';
 import { PopupRef } from '@/types/view.types';
-import { calculateROI } from '@/utils/calculate';
-import { formatSmartMoney } from '@/utils/format';
+import { calculateROI, formatSmartMoney } from '@/utils/convertData';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
@@ -43,9 +42,9 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     }, []);
 
     const onGetData = async () => {
-        const type = key_assets.invest;
+        const investAssetId = infoAsset?.[key_assets.invest]?.id;
         const category_id = investmentData.id;
-        const data = await getListTransaction(uid, type, category_id);
+        const data = await getListTransaction(uid, investAssetId, category_id);
         if (data.success) {
             const listData = data?.data as InfoTransaction[] || [];
             setDataList(listData);
@@ -285,7 +284,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
             style={{ flex: 1 }}>
 
             <View style={styles.container}>
-                <HeaderView onBack={onBack} title={investmentData.name} />
+                <HeaderView isCenter={true} onBack={onBack} title={investmentData.name} />
                 <FlatList
                     ListHeaderComponent={renderHeader}
                     renderItem={renderItem}

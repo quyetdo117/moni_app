@@ -1,4 +1,4 @@
-import { formatSmartMoney } from '@/utils/format';
+import { formatSmartMoney } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import RNBounceable from "@freakycoder/react-native-bounceable";
 import React from 'react';

@@ -1,7 +1,8 @@
 import { db } from "@/configs/firebaseConfig";
-import { key_assets, tables_name, TYPE_TRANSACTION } from "@/constants/constants";
+import { key_assets, tables_name, TYPE_TRANSACTION, types_display } from "@/constants/constants";
 import { DataFormExpense } from "@/screens/ExpenseScreen/types/Expense.types";
 import { DataFormInvest } from "@/screens/InvestmentScreen/types/Investment.types";
+import { DataFormSave } from "@/screens/SaveScreen/types/Save.types";
 import { Asset, Category, Transaction } from "@/types/schema.types";
 import { getDoc, increment, runTransaction, serverTimestamp } from "firebase/firestore";
 import moment from "moment";
@@ -103,6 +104,7 @@ export const createTransactionInvest = async (body: DataFormInvest) => {
                     categoryData.total_market = Number(body.market_value || 0) * Number(body.quantity || 0);
                     categoryData.type = Number(body.type || 0);
                     categoryData.createdAt = currentTimestamp;
+                    categoryData.type_display = types_display.invest;
                     categoryData.date_update = Number(body.date_buy || currentTimestamp);
                     dataResult = {
                         ...categoryData
@@ -124,6 +126,125 @@ export const createTransactionInvest = async (body: DataFormInvest) => {
                     total_value: Number(body.total_value || 0),
                     date_buy: Number(body.date_buy || currentTimestamp),
                     category_id: body.category_id || categoriesRef.id,
+                    type_display: types_display.invest,
+                    id: newTransactionRef.id,
+                    createdAt: currentTimestamp
+                };
+                ts.set(newTransactionRef, newTransactionData)
+
+            } else {
+                throw new Error("Dữ liệu không tồn tại!");
+            }
+        })
+        // TRẢ VỀ TRẠNG THÁI THÀNH CÔNG
+        return { success: true, message: "Giao dịch hoàn tất", data: dataResult };
+    } catch (error: any) {
+        console.log('logg error', error)
+        return { success: false, message: error.message || "Có lỗi xảy ra" };
+    }
+}
+
+/// - Tao Giao dich Tiết kiệm
+export const createTransactionSave = async (body: DataFormSave) => {
+    try {
+        const { user_id, asset_id } = body;
+        if (!user_id) throw new Error("Thiếu user_id!");
+        if (!asset_id) throw new Error("Thiếu asset_id! Vui lòng kiểm tra thông tin tài sản.");
+        let dataResult: any = null;
+        await runTransaction(db, async (ts) => {
+            const userRef = getDocumentRef(tables_name.USER, user_id);
+            const assetRef = getDocumentRef(tables_name.ASSET, asset_id);
+            const newTransactionRef = getNewDocRef(tables_name.TRANSACTION);
+            const categoriesRef = getNewDocRef(tables_name.CATEGORY);
+            const dataAssetExpense = await getAssetForType(key_assets.expense, user_id);
+            if (!dataAssetExpense) throw new Error("Khong tim thay Asset!");
+            const assetExpenseRef = getDocumentRef(tables_name.ASSET, dataAssetExpense.id);
+
+            const [userSnap, assetsSnap, assetExpenseSnap] = await Promise.all([
+                ts.get(userRef),
+                ts.get(assetRef),
+                ts.get(assetExpenseRef)
+            ])
+
+            let categorySnap;
+            let categoryRef;
+
+            if (body.category_id) {
+                categoryRef = getDocumentRef(tables_name.CATEGORY, body.category_id);
+                categorySnap = await ts.get(categoryRef);
+            }
+
+            if (userSnap.exists() && assetsSnap.exists() && assetExpenseSnap.exists()) {
+                const isAdd = body.type === TYPE_TRANSACTION.IN;
+                const total_value = Number(body.total_value);
+                const newSaveBalance = isAdd
+                    ? total_value
+                    : - total_value;
+
+                // -- Asset expense
+                ts.update(assetExpenseRef, {
+                    total_value: increment(-newSaveBalance)
+                })
+
+                const currentTimestamp = moment(new Date()).unix();
+
+                /// --- Category
+                if (categoryRef && categorySnap?.exists()) {
+                    /// Update category
+                    const categoryData = categorySnap.data() as Category;
+                    const dataUpdate: any = {
+                        total_value: increment(Number(body.total_value)),
+                    };
+
+                    const existingDateUpdate = categoryData.date_update || 0;
+                    const bodyDateBuy = Number(body.date_buy) || currentTimestamp;
+
+                    if (bodyDateBuy > existingDateUpdate) {
+                        dataUpdate.target_value = Number(body.target) || categoryData.target_value;
+                        dataUpdate.date_update = bodyDateBuy;
+                    }
+
+                    dataResult = {
+                        ...categoryData,
+                        ...dataUpdate
+                    }
+                    ts.update(categoryRef, dataUpdate)
+                } else {
+                    /// Tao category
+                    const categoryData: any = {};
+                    categoryData.name = body.name;
+                    categoryData.id = categoriesRef.id;
+                    categoryData.asset_id = body.asset_id;
+                    categoryData.total_value = Number(body.total_value || 0);
+                    categoryData.target_value = Number(body.target || 0);
+                    categoryData.type = Number(body.type || 0);
+                    categoryData.createdAt = currentTimestamp;
+                    categoryData.user_id = body.user_id;
+                    categoryData.type_display = types_display.save;
+                    categoryData.date_update = Number(body.date_buy || currentTimestamp);
+                    dataResult = {
+                        ...categoryData
+                    }
+                    ts.set(categoriesRef, categoryData);
+                }
+
+                /// --- Asset
+                ts.update(assetRef, {
+                    total_value: increment(newSaveBalance)
+                })
+
+                /// --- Transaction
+                const newTransactionData = {
+                    type: Number(body.type || 0),
+                    name: body.name,
+                    total_value: Number(body.total_value || 0),
+                    date_buy: Number(body.date_buy || currentTimestamp),
+                    note: body.note || '',
+                    asset_id: body.asset_id,
+                    user_id: body.user_id,
+                    type_display: types_display.save,
+                    category_id: body.category_id || categoriesRef.id,
+                    target: Number(body.target || 0),
                     id: newTransactionRef.id,
                     createdAt: currentTimestamp
                 };

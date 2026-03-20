@@ -2,7 +2,7 @@ import ButtonAnimated from '@/components/common/ButtonAnimated';
 import { COLOR_APP } from '@/constants/constants';
 import { loginUser, registerUser } from '@/services/Api/auth.services';
 import { useUserStore } from '@/store/main.store';
-import { line_min } from '@/utils/calculate';
+import { line_min } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React, { useRef, useState } from 'react';

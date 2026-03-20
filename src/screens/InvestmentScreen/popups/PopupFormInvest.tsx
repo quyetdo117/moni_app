@@ -81,7 +81,8 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
 
     const getCategoriesInvest = async () => {
         try {
-            const jsonData = await getCategories(key_assets.invest, uid);
+            const dataBody = { asset_id: infoAsset?.invest?.id, type: key_assets.invest }
+            const jsonData = await getCategories(dataBody, uid);
             if (jsonData.success) {
                 const list = jsonData.data as Category[] || [];
                 setCategories(list)

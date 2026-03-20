@@ -37,7 +37,9 @@ export const useListStore = create<ListItem>((set) => ({
     listExpense: [],
     setListExpense: (data) => set({ listExpense: data }),
     listInvest: [],
-    setListInvest: (data) => set({ listInvest: data })
+    setListInvest: (data) => set({ listInvest: data }),
+    listSave: [],
+    setListSave: (data) => set({ listSave: data })
 }))
 
 export const useChartStore = create<ChartStore>()(

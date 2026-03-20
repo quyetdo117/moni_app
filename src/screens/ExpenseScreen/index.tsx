@@ -81,8 +81,8 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     }, [])
 
     const onGetData = async (category_id?: string, category_type?: number) => {
-        const type = key_assets.expense;
-        const data = await getListTransaction(uid, type, category_id, category_type);
+        const expenseAssetId = infoAsset?.[key_assets.expense]?.id;
+        const data = await getListTransaction(uid, expenseAssetId, category_id, category_type);
         if (data.success) {
             const listData = data?.data as InfoTransaction[] || [];
             setDataList(listData);
@@ -123,9 +123,9 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     const onPressType = (data?: Category) => {
         const typeValue = data?.type ?? 0;
         setSelectedType(typeValue);
-        if (data?.type_expense) {
+        if (data?.type_display) {
             onGetData(data?.id);
-            refChart.current?.setColor(getColorCategory(data.type_expense))
+            refChart.current?.setColor(getColorCategory(data.type_display))
         } else {
             onGetData('', typeValue);
             refChart.current?.setColor(COLOR_APP.green)
@@ -218,12 +218,12 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
                             <View style={styles.list}>
                                 {
                                     categories.map((item, index) => {
-                                        const type_expense = item.type_expense;
-                                        if (type_expense == 5) return null;
+                                        const type_display = item.type_display;
+                                        if (type_display == 5) return null;
                                         return <ItemCategory
                                             onPress={onPressType}
-                                            style_box={type_expense ?
-                                                { backgroundColor: getColorCategory(type_expense) } : null} data={item} key={index} />
+                                            style_box={type_display ?
+                                                { backgroundColor: getColorCategory(type_display) } : null} data={item} key={index} />
                                     })
                                 }
                             </View>

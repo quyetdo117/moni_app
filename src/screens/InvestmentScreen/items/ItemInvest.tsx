@@ -1,7 +1,6 @@
 
 import { COLOR_APP } from '@/constants/constants';
-import { calculateROI } from '@/utils/calculate';
-import { formatSmartMoney } from '@/utils/format';
+import { calculateROI, formatSmartMoney } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React from 'react';

@@ -1,6 +1,6 @@
 import { COLOR_APP } from '@/constants/constants';
 import { useListStore } from '@/store/main.store';
-import { formatChartData } from '@/utils/format';
+import { formatChartData } from '@/utils/convertData';
 import moment from 'moment';
 import React, { ReactNode, Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';

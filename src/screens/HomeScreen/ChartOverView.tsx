@@ -2,7 +2,7 @@ import { key_assets } from '@/constants/constants';
 import { getPieChartData, PieChartData } from '@/services/Api/get.services';
 import { useChartStore, useUserStore } from '@/store/main.store';
 import { ChartDataItemStore } from '@/store/store.types';
-import { formatSmartMoney_2 } from '@/utils/format';
+import { formatSmartMoney_2 } from '@/utils/convertData';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React, { useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
