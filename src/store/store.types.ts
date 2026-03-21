@@ -1,6 +1,6 @@
 import { DataInvestItem } from '@/screens/InvestmentScreen/types/Investment.types';
 import { InfoAsset, InfoTransaction, InfoUser } from "@/types/info.types";
-import { type_asset } from "@/types/schema.types";
+import { Category, type_asset } from "@/types/schema.types";
 
 export interface InfoUserStore {
     infoUser: InfoUser | null;
@@ -19,8 +19,8 @@ export interface ListItem {
     setListExpense: (data: InfoTransaction[]) => void;
     listInvest: DataInvestItem[],
     setListInvest: (data: DataInvestItem[]) => void;
-    listSave: InfoTransaction[],
-    setListSave: (data: InfoTransaction[]) => void;
+    listSave: Category[],
+    setListSave: (data: Category[]) => void;
 }
 
 export interface ChartStore {

@@ -132,21 +132,7 @@ export const getInfoUser = async (id: string) => {
             orderBy('stt', 'asc')
         );
 
-        // Lay asset invest
-        const assetInvest = await getAssetForType(key_assets.invest, id);
-        if (!assetInvest) throw new Error("Khong tim thay Asset Invest!");
-
-        // Su dung getAggregateFromServer de tinh tong total_market tu server
-        const categoriesRef = collection(db, tables_name.CATEGORY);
-        const q = query(categoriesRef, where('asset_id', '==', assetInvest.id));
-
-        const totalAgg = await getAggregateFromServer(q, {
-            total_market: sum('total_market')
-        });
-
-        // Lay total_market tu ket qua aggregate
-        const total_market = totalAgg.data().total_market || 0;
-
+        // Lấy tất cả assets trước
         const userSnap = await getDoc(userRef);
         const assetSnap = await getDocs(query_asset);
 
@@ -157,17 +143,45 @@ export const getInfoUser = async (id: string) => {
         }
 
         const dataUser = userSnap.data();
-        const dataAssets = assetSnap.docs.map((item) => {
-            const itemData = item.data() as Asset;
+        
+        // Lấy danh sách asset
+        const assets = assetSnap.docs.map((item) => item.data() as Asset);
+        
+        // Tạo map để lưu total_market cho từng asset
+        const assetMarketValues: Record<string, number> = {};
+        
+        // Lấy asset invest và save
+        const assetInvest = assets.find(a => a.type === key_assets.invest);
+        const assetSave = assets.find(a => a.type === key_assets.save);
+        
+        // Tính total_market cho invest nếu có
+        if (assetInvest) {
+            const categoriesRef = collection(db, tables_name.CATEGORY);
+            const qInvest = query(categoriesRef, where('asset_id', '==', assetInvest.id));
+            const totalAggInvest = await getAggregateFromServer(qInvest, {
+                total_market: sum('total_market')
+            });
+            assetMarketValues[assetInvest.id] = totalAggInvest.data().total_market || 0;
+        }
+        
+        // Tính total_market cho save nếu có
+        if (assetSave) {
+            const categoriesRef = collection(db, tables_name.CATEGORY);
+            const qSave = query(categoriesRef, where('asset_id', '==', assetSave.id));
+            const totalAggSave = await getAggregateFromServer(qSave, {
+                total_market: sum('total_market')
+            });
+            assetMarketValues[assetSave.id] = totalAggSave.data().total_market || 0;
+        }
+
+        // Map assets với total_market đã tính
+        const dataAssets = assets.map((itemData) => {
             const dataAsset = {
-                ...itemData
-            } as InfoAsset
-            if (itemData.type === key_assets.invest) {
-                dataAsset.total_market = total_market
-            }
-            return {
-                ...dataAsset
-            }
+                ...itemData,
+                total_market: assetMarketValues[itemData.id] || 0
+            } as InfoAsset;
+            
+            return dataAsset;
         });
 
         const infoUser = {
@@ -186,8 +200,9 @@ export const getInfoUser = async (id: string) => {
 
 // Lay thong tin tong quart chi tieu
 
-export const getInfoExpense = async (id: string) => {
+export const getInfoExpense = async (id?: string) => {
     try {
+        if (!id) throw new Error('Khong lay duoc asset id')
         const transactionsRef = collection(db, tables_name.TRANSACTION);
         const assetRef = getDocumentRef(tables_name.ASSET, id)
         const q = query(transactionsRef,

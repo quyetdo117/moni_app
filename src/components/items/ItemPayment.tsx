@@ -26,7 +26,6 @@ export default function ItemPayment({ data }: dataPayment) {
   const infoIcon = getIconByTypeDisplay(type_display);
   const {name, library, color} = infoIcon;
   const IconCategory = library;
-  console.log('logg icon', color)
   return (
     <View style={[styles.container]}>
       <View style={[styles.row, { marginBottom: 2 }]}>

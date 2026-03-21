@@ -15,7 +15,7 @@ interface ItemSaveProps {
     date_buy: number;
     createdAt?: any;
   };
-  onPress?: Function;
+  onPress?: (data: ItemSaveProps['data']) => void;
 }
 
 export default function ItemSave({ data, onPress }: ItemSaveProps) {

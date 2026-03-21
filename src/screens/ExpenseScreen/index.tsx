@@ -93,7 +93,8 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     }
 
     const getListCate = async () => {
-        const data = await getInfoExpense(uid);
+        const expenseAssetId = infoAsset?.[key_assets.expense]?.id;
+        const data = await getInfoExpense(expenseAssetId);
         const data_ = data.data
         if (data.success && data_) {
             data_base.current[0].total_value = data_.total_income;

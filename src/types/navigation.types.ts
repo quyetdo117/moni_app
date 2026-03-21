@@ -3,6 +3,7 @@ import { CompositeScreenProps } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { DataInvestItem } from "@/screens/InvestmentScreen/types/Investment.types";
+import { SaveDetailData } from "@/screens/SaveScreen/SaveDetailScreen/index";
 
 export type RootStackParamList = {
     MainTab: undefined;
@@ -11,6 +12,7 @@ export type RootStackParamList = {
     InvestmentScreen: undefined;
     InvestmentDetailScreen: {data: DataInvestItem};
     SaveScreen: undefined;
+    SaveDetailScreen: {data: SaveDetailData};
 };
 
 export type MainTabParamList = {

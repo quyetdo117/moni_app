@@ -3,14 +3,14 @@ import EmptyView from '@/components/common/EmptyView';
 import HeaderView from '@/components/common/HeaderView';
 import { COLOR_APP, key_assets } from '@/constants/constants';
 import { getCategories } from '@/services/Api/get.services';
-import { useUserStore } from '@/store/main.store';
+import { useListStore, useUserStore } from '@/store/main.store';
 import { RootStackScreenProps } from '@/types/navigation.types';
 import { Category } from '@/types/schema.types';
 import { PopupRef } from '@/types/view.types';
 import { formatSmartMoney } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import ItemSave from './items/ItemSave';
 import PopupFormSave from './popups/PopupFormSave';
@@ -26,13 +26,14 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
   const uid = useUserStore((state) => state.uid);
   const infoAsset = useUserStore((state) => state.infoAsset);
 
-  const [dataList, setDataList] = useState<Category[]>([]);
+  const listSave = useListStore((state) => state.listSave);
+  const setListSave = useListStore((state) => state.setListSave);
 
   // Get save asset info
   const saveAsset = infoAsset?.[key_assets.save];
 
   // Calculate totals
-  const totalUsedForSaving = dataList.reduce((sum, item) => sum + (item.total_value || 0), 0);
+  
   const totalSaved = saveAsset?.total_value || 0;
   const totalWithInterest = saveAsset?.total_market || totalSaved;
 
@@ -49,7 +50,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
     const data = await getCategories({ asset_id: saveAssetId, type: key_assets.save }, uid);
     if (data.success) {
       const listData = (data?.data as Category[]) || [];
-      setDataList(listData);
+      setListSave(listData);
     }
   };
 
@@ -65,6 +66,12 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
 
   const keyExtractor_ = (item: Category, index: number) => item.id || index.toString();
 
+  const onItemPress = (data: any) => {
+    if (navigation) {
+      navigation.navigate('SaveDetailScreen', { data });
+    }
+  };
+
   const renderItem = ({ item, index }: DataItem) => {
     return (
       <ItemSave
@@ -76,6 +83,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
           target: item.target_value,
           date_buy: item.date_update,
         }}
+        onPress={onItemPress}
       />
     );
   };
@@ -87,19 +95,17 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>{'Đã sử dụng để tiết kiệm'}</Text>
-              <Text style={styles.summaryValue}>{formatSmartMoney(totalUsedForSaving)}</Text>
+              <Text style={styles.summaryValue}>{formatSmartMoney(totalSaved)}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryLabel, styles.savedValue]}>{'Số tiền đã tiết kiệm'}</Text>
               <Text style={[styles.summaryValue, styles.savedValue]}>{formatSmartMoney(totalSaved)}</Text>
             </View>
           </View>
-          {totalWithInterest > totalSaved && (
-            <View style={styles.interestRow}>
+          <View style={styles.interestRow}>
               <Text style={styles.interestLabel}>{'Bao gồm lãi:'}</Text>
               <Text style={styles.interestValue}>+{formatSmartMoney(totalWithInterest - totalSaved)}</Text>
             </View>
-          )}
         </View>
         <ButtonCustom
           title='Tạo khoản tiết kiệm'
@@ -112,7 +118,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
         <Text style={styles.sectionTitle}>{'Danh sách tiết kiệm'}</Text>
       </View>
     );
-  }, [totalUsedForSaving, totalSaved, totalWithInterest]);
+  }, [totalSaved, totalWithInterest]);
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -122,7 +128,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
           ListHeaderComponent={renderHeader}
           renderItem={renderItem}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
-          data={dataList}
+          data={listSave}
           keyExtractor={keyExtractor_}
           ListEmptyComponent={<EmptyView />}
           contentContainerStyle={styles.listContent}
