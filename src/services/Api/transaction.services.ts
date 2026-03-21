@@ -4,7 +4,7 @@ import { DataFormExpense } from "@/screens/ExpenseScreen/types/Expense.types";
 import { DataFormInvest } from "@/screens/InvestmentScreen/types/Investment.types";
 import { DataFormSave } from "@/screens/SaveScreen/types/Save.types";
 import { Asset, Category, Transaction } from "@/types/schema.types";
-import { getDoc, increment, runTransaction, serverTimestamp } from "firebase/firestore";
+import { getDoc, increment, runTransaction, serverTimestamp, updateDoc } from "firebase/firestore";
 import moment from "moment";
 import { getDocumentRef, getNewDocRef } from "./base.services";
 import { getAssetForType } from "./get.services";
@@ -194,6 +194,7 @@ export const createTransactionSave = async (body: DataFormSave) => {
                     const categoryData = categorySnap.data() as Category;
                     const dataUpdate: any = {
                         total_value: increment(Number(body.total_value)),
+                        total_market: increment(Number(body.total_value)),
                     };
 
                     const existingDateUpdate = categoryData.date_update || 0;
@@ -216,6 +217,7 @@ export const createTransactionSave = async (body: DataFormSave) => {
                     categoryData.id = categoriesRef.id;
                     categoryData.asset_id = body.asset_id;
                     categoryData.total_value = Number(body.total_value || 0);
+                    categoryData.total_market = Number(body.total_value || 0);
                     categoryData.target_value = Number(body.target || 0);
                     categoryData.type = Number(body.type || 0);
                     categoryData.createdAt = currentTimestamp;
@@ -382,6 +384,142 @@ export const deleteTransaction = async (id: string) => {
         return { success: true, message: "Xoa thanh cong" };
     } catch (error: any) {
         return { success: false, message: error.message || "Xoa that bai!" };
+    }
+}
+
+// Update category (saving)
+export const updateCategorySave = async (dataBody: {
+    id: string;
+    name: string;
+    target_value: number;
+    date_buy: number;
+    total_market: number;
+}) => {
+    try {
+        const { id, name, target_value, date_buy, total_market } = dataBody;
+        const categoryRef = getDocumentRef(tables_name.CATEGORY, id);
+        const categorySnap = await getDoc(categoryRef);
+        
+        if (!categorySnap.exists()) {
+            throw new Error("Không tìm thấy danh mục!");
+        }
+
+        const updateData: Record<string, any> = {
+            name: name,
+            target_value: Number(target_value) || 0,
+            date_update: date_buy,
+            total_market: Number(total_market) || 0,
+        };
+
+        await updateDoc(categoryRef, updateData);
+
+        return { 
+            success: true, 
+            message: "Cập nhật thành công",
+            data: {
+                ...categorySnap.data(),
+                ...updateData
+            }
+        };
+    } catch (error: any) {
+        console.error("Update Save Category Error:", error);
+        return { success: false, message: error.message || "Cập nhật thất bại!" };
+    }
+}
+
+// Update category (investment)
+export const updateCategory = async (dataBody: {
+    id: string;
+    name: string;
+    market_value: number;
+    date_buy: number;
+    quantity: number;
+}) => {
+    try {
+        const { id, name, market_value, date_buy, quantity } = dataBody;
+        const categoryRef = getDocumentRef(tables_name.CATEGORY, id);
+        const categorySnap = await getDoc(categoryRef);
+        
+        if (!categorySnap.exists()) {
+            throw new Error("Không tìm thấy danh mục!");
+        }
+
+        const updateData: Record<string, any> = {
+            name: name,
+            market_value: Number(market_value) || 0,
+            date_update: date_buy,
+        };
+
+        // Recalculate total_market based on new market_value and quantity
+        const qty = quantity || 0;
+        updateData.total_market = Number(market_value || 0) * qty;
+
+        await updateDoc(categoryRef, updateData);
+
+        return { 
+            success: true, 
+            message: "Cập nhật thành công",
+            data: {
+                ...categorySnap.data(),
+                ...updateData
+            }
+        };
+    } catch (error: any) {
+        console.error("Update Category Error:", error);
+        return { success: false, message: error.message || "Cập nhật thất bại!" };
+    }
+}
+
+// Delete category (investment)
+export const deleteCategory = async (categoryId: string, userId: string) => {
+    try {
+        const categoryRef = getDocumentRef(tables_name.CATEGORY, categoryId);
+        const dataAssetExpense = await getAssetForType(key_assets.expense, userId);
+        
+        if (!dataAssetExpense) throw new Error("Không tìm thấy Asset chi tiêu!");
+        const assetExpenseRef = getDocumentRef(tables_name.ASSET, dataAssetExpense.id);
+
+        await runTransaction(db, async (ts) => {
+            // Gộp tất cả lệnh READ vào đầu Transaction
+            const categorySnap = await ts.get(categoryRef);
+            if (!categorySnap.exists()) throw new Error("Danh mục không tồn tại!");
+
+            const categoryData = categorySnap.data() as Category;
+            const { asset_id, total_value = 0 } = categoryData;
+            const assetRef = getDocumentRef(tables_name.ASSET, asset_id);
+
+            // Đọc các Asset để đảm bảo chúng tồn tại và lock dữ liệu
+            const [assetSnap, assetExpenseSnap] = await Promise.all([
+                ts.get(assetRef),
+                ts.get(assetExpenseRef)
+            ]);
+
+            if (!assetSnap.exists() || !assetExpenseSnap.exists()) {
+                throw new Error("Dữ liệu tài sản không hợp lệ!");
+            }
+
+            const refundAmount = Number(total_value);
+
+            // --- BẮT ĐẦU CÁC LỆNH GHI (WRITE) ---
+            
+            // 1. Trả lại tiền cho Asset gốc (Trừ giá trị tích lũy của Category đó)
+            ts.update(assetRef, {
+                total_value: increment(-refundAmount)
+            });
+
+            // 2. Cộng lại tiền vào ví Chi tiêu (Vì xóa Category chi tiêu đồng nghĩa tiền quay về ví)
+            ts.update(assetExpenseRef, {
+                total_value: increment(refundAmount)
+            });
+
+            // 3. Xóa danh mục
+            ts.delete(categoryRef);
+        });
+
+        return { success: true, message: "Xóa danh mục thành công" };
+    } catch (error: any) {
+        console.error("Delete Category Error:", error);
+        return { success: false, message: error.message || "Xóa thất bại!" };
     }
 }
 

@@ -99,7 +99,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
             </View>
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryLabel, styles.savedValue]}>{'Số tiền đã tiết kiệm'}</Text>
-              <Text style={[styles.summaryValue, styles.savedValue]}>{formatSmartMoney(totalSaved)}</Text>
+              <Text style={[styles.summaryValue, styles.savedValue]}>{formatSmartMoney(totalWithInterest)}</Text>
             </View>
           </View>
           <View style={styles.interestRow}>

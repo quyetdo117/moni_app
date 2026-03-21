@@ -1,22 +1,25 @@
 import BoxSwipeable from '@/components/common/BoxSwipeable';
+import ButtonCustom from '@/components/common/ButtonCustom';
 import EmptyView from '@/components/common/EmptyView';
 import HeaderView from '@/components/common/HeaderView';
 import ItemInvestPayment from '@/components/items/ItemInvestPayment';
 import { PopupConfirm } from '@/components/popups/PopupConfirm';
 import { PopupToast } from '@/components/popups/PopupToast';
-import { COLOR_APP, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
+import { COLOR_APP, Colors, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
 import { DataInvestItem } from '@/screens/InvestmentScreen/types/Investment.types';
 import { getListTransaction } from '@/services/Api/get.services';
-import { deleteTransaction } from '@/services/Api/transaction.services';
+import { deleteCategory, deleteTransaction } from '@/services/Api/transaction.services';
 import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
-import { InfoTransaction } from '@/types/info.types';
+import { InfoAsset, InfoTransaction } from '@/types/info.types';
 import { RootStackScreenProps } from '@/types/navigation.types';
 import { PopupRef } from '@/types/view.types';
 import { calculateROI, formatSmartMoney } from '@/utils/convertData';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import PopupEditInvestCategory from '../popups/PopupEditInvestCategory';
 import PopupEditTransaction from '../popups/PopupEditTransaction';
+import PopupFormInvest from '../popups/PopupFormInvest';
 
 interface DataItem {
     item: InfoTransaction;
@@ -32,6 +35,8 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     const setInfoAsset = useUserStore(state => state.setInfoAsset);
     const updateChartData = useChartStore(state => state.updateChartData);
     const editTransactionRef = useRef<PopupRef>(null);
+    const editCategoryRef = useRef<PopupRef>(null);
+    const createTransactionRef = useRef<PopupRef>(null);
     const deleteConfirmRef = useRef<PopupRef>(null);
     const toastRef = useRef<PopupRef>(null);
     const [dataList, setDataList] = useState<InfoTransaction[]>([]);
@@ -57,6 +62,103 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
         navigation?.goBack();
     }
 
+    // Button handlers for category
+    const onEditCategory = () => {
+        if (editCategoryRef.current) {
+            editCategoryRef.current.onShow(investmentData);
+        }
+    }
+
+    const onDeleteCategory = () => {
+        if (deleteConfirmRef.current) {
+            deleteConfirmRef.current.onShow({
+                title: 'Bạn có chắc chắn muốn xóa danh mục này?',
+                data: investmentData,
+                onConfirm: confirmDeleteCategory,
+                onCancel: () => { }
+            });
+        }
+    }
+
+    const confirmDeleteCategory = async (data: DataInvestItem) => {
+        try {
+            const jsonData = await deleteCategory(data.id, uid);
+            if (jsonData.success) {
+                // Update store - remove this category from list
+                const updatedListInvest = listInvest.filter(item => item.id !== data.id);
+                setListInvest(updatedListInvest);
+
+                // Update infoAsset
+                if (infoAsset?.['invest']) {
+                    const currentTotalInvest = infoAsset['invest'].total_value || 0;
+                    const currentTotalMarket = infoAsset['invest'].total_market || 0;
+                    const newTotalInvest = currentTotalInvest - (data.total_value || 0);
+                    const newTotalMarket = currentTotalMarket - (data.total_market || 0);
+
+                    const updatedAsset = {
+                        ...infoAsset['invest'],
+                        total_value: newTotalInvest,
+                        total_market: newTotalMarket
+                    } as InfoAsset;
+
+                    const updatedAssetExpense = {
+                        ...infoAsset['expense'],
+                        total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_value || 0)
+                    } as InfoAsset;
+
+                    setInfoAsset([updatedAsset, updatedAssetExpense]);
+                }
+
+                toastRef.current?.onShow({
+                    message: 'Xóa danh mục thành công',
+                    type: 'success',
+                    duration: 2000
+                });
+
+                // Navigate back
+                navigation?.goBack();
+            } else {
+                toastRef.current?.onShow({
+                    message: jsonData.message || 'Xóa danh mục thất bại',
+                    type: 'error',
+                    duration: 2000
+                });
+            }
+        } catch (error: any) {
+            toastRef.current?.onShow({
+                message: error.message || 'Xóa danh mục thất bại',
+                type: 'error',
+                duration: 2000
+            });
+        }
+    }
+
+    const onCreateTransaction = () => {
+        if (createTransactionRef.current) {
+            createTransactionRef.current.onShow(investmentData.id);
+        }
+    }
+
+    const onCreateTransactionSuccess = () => {
+        onGetData();
+    }
+
+    const onEditCategorySuccess = (updatedData: DataInvestItem) => {
+        setInvestmentData(updatedData);
+
+        // Update list
+        const updatedListInvest = listInvest.map(item =>
+            item.id === updatedData.id ? updatedData : item
+        );
+        setListInvest(updatedListInvest);
+
+        toastRef.current?.onShow({
+            message: 'Cập nhật thành công',
+            type: 'success',
+            duration: 2000
+        });
+    }
+
     const keyExtractor_ = (item: InfoTransaction, index: number) => index.toString();
 
     // Hàm cập nhật infoUser trong store sau khi có thay đổi investment
@@ -65,7 +167,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
 
         const currentInvestAsset = infoAsset['invest'];
         const currentExpenseAsset = infoAsset['expense'];
-        if (!currentInvestAsset || !currentExpenseAsset ) return;
+        if (!currentInvestAsset || !currentExpenseAsset) return;
 
         // Cập nhật asset thành công mới
         const updatedAsset = {
@@ -120,7 +222,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
                 title: 'Bạn có chắc chắn muốn xóa giao dịch này?',
                 data: data,
                 onConfirm: confirmDelete,
-                onCancel: () => {}
+                onCancel: () => { }
             });
         }
     }
@@ -225,58 +327,105 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     const dateTimestamp = investmentData.createdAt;
     const dateStr = dateTimestamp ? moment.unix(dateTimestamp).format('DD/MM/YYYY') : '';
 
+    // Render action buttons row
+    const renderActionButtons = () => {
+        return (
+            <View style={styles.actionButtonsContainer}>
+                <ButtonCustom
+                    title="Thêm giao dịch"
+                    onPress={onCreateTransaction}
+                    style_btn={styles.addButton}
+                    style_txt={styles.addButtonText}
+                />
+
+                <View style={styles.secondaryButtonsRow}>
+                    <ButtonCustom
+                        title="Sửa"
+                        onPress={onEditCategory}
+                        style_btn={styles.editButton}
+                        style_txt={styles.editButtonText}
+                    />
+
+                    <ButtonCustom
+                        title="Xóa"
+                        onPress={onDeleteCategory}
+                        style_btn={styles.deleteButton}
+                        style_txt={styles.deleteButtonText}
+                    />
+                </View>
+            </View>
+        );
+    }
+
     const renderHeader = () => {
+        const roiColor = roi_value >= 0 ? COLOR_APP.green : COLOR_APP.red;
+        const roiBgColor = roi_value >= 0 ? '#e8f5e9' : '#ffebee';
+
         return (
             <View style={styles.container_header}>
                 <View style={styles.box_info}>
+                    <View style={styles.boxHeader}>
+                        <Text style={styles.investmentName} numberOfLines={1}>
+                            {investmentData.name}
+                        </Text>
+                        <View style={[styles.roiBadge, { backgroundColor: roiBgColor }]}>
+                            <Text style={[styles.roiBadgeText, { color: roiColor }]}>
+                                ROI: {roi_value}%
+                            </Text>
+                        </View>
+                    </View>
+
                     <View style={styles.row}>
-                        <View style={styles.col}>
+                        <View style={styles.colHighlight}>
                             <Text style={styles.label}>{'Tổng vốn'}</Text>
-                            <Text style={[styles.value, { color: COLOR_APP.green }]}>
+                            <Text style={[styles.valueSmall, { color: COLOR_APP.green }]}>
                                 {formatSmartMoney(investmentData.total_value || 0)}
                             </Text>
                         </View>
-                        <View style={styles.col}>
+                        <View style={styles.colHighlight}>
                             <Text style={styles.label}>{'Giá trị hiện tại'}</Text>
-                            <Text style={[styles.value, { color: COLOR_APP.blue }]}>
+                            <Text style={[styles.valueSmall, { color: COLOR_APP.blue }]}>
                                 {formatSmartMoney(investmentData.total_market || 0)}
                             </Text>
                         </View>
                     </View>
+
                     <View style={styles.row}>
                         <View style={styles.col}>
                             <Text style={styles.label}>{'Số lượng'}</Text>
-                            <Text style={styles.value}>{investmentData.quantity || 0}</Text>
+                            <Text style={styles.valueSmall}>{investmentData.quantity || 0}</Text>
                         </View>
                         <View style={styles.col}>
                             <Text style={styles.label}>{'Giá thị trường'}</Text>
-                            <Text style={styles.value}>
+                            <Text style={styles.valueSmall}>
                                 {formatSmartMoney(investmentData.market_value || 0)}
                             </Text>
                         </View>
                     </View>
+
                     <View style={styles.row}>
                         <View style={styles.col}>
-                            <Text style={styles.label}>{'ROI'}</Text>
-                            <Text style={[
-                                styles.value,
-                                { color: roi_value >= 0 ? COLOR_APP.green : COLOR_APP.red }
-                            ]}>
-                                {`${roi_value}%`}
+                            <Text style={styles.label}>{'Lãi/Lỗ'}</Text>
+                            <Text style={[styles.valueSmall, { color: roiColor }]}>
+                                {formatSmartMoney((investmentData.total_market || 0) - (investmentData.total_value || 0))}
                             </Text>
                         </View>
                         <View style={styles.col}>
                             <Text style={styles.label}>{'Ngày mua'}</Text>
-                            <Text style={styles.value}>{dateStr}</Text>
+                            <Text style={styles.valueSmall}>{dateStr}</Text>
                         </View>
                     </View>
                 </View>
-                <Text style={styles.txt_title}>{'Lịch sử giao dịch'}</Text>
+
+                {renderActionButtons()}
+
+                <View style={styles.sectionHeader}>
+                    <View style={styles.sectionIcon} />
+                    <Text style={styles.txt_title}>{'Lịch sử tích lũy'}</Text>
+                </View>
             </View>
         )
     }
-
-    console.log('loggg dataList', dataList)
 
     return (
         <KeyboardAvoidingView
@@ -284,15 +433,23 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
             style={{ flex: 1 }}>
 
             <View style={styles.container}>
-                <HeaderView isCenter={true} onBack={onBack} title={investmentData.name} />
+                <HeaderView
+                    isCenter={true}
+                    onBack={onBack}
+                    style_txt={{fontSize: 20}}
+                    title={'Chi tiết khoản đầu tư'} />
                 <FlatList
                     ListHeaderComponent={renderHeader}
                     renderItem={renderItem}
                     data={dataList}
                     keyExtractor={keyExtractor_}
                     ListEmptyComponent={<EmptyView />}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
                 />
                 <PopupEditTransaction ref={editTransactionRef} onSuccess={onUpdateSuccess} />
+                <PopupEditInvestCategory ref={editCategoryRef} onSuccess={onEditCategorySuccess} />
+                <PopupFormInvest ref={createTransactionRef} onSuccess={onCreateTransactionSuccess} />
                 <PopupConfirm ref={deleteConfirmRef} />
                 <PopupToast ref={toastRef} />
             </View>
@@ -302,17 +459,48 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1
+        flex: 1,
+        backgroundColor: Colors.background
     },
     container_header: {
-        marginHorizontal: 10,
-        marginBottom: 10
+        marginHorizontal: 16,
+        marginBottom: 10,
+        marginTop: 15
     },
     box_info: {
-        backgroundColor: '#f2f6f9',
-        borderRadius: 15,
-        padding: 15,
-        marginBottom: 15
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        padding: 10,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    boxHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
+    },
+    investmentName: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: Colors.text,
+        flex: 1,
+    },
+    roiBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    roiBadgeText: {
+        fontSize: 14,
+        fontWeight: '700',
     },
     txt_name: {
         color: '#000',
@@ -324,33 +512,105 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginVertical: 5
+        marginVertical: 8
     },
     col: {
         flex: 1,
         alignItems: 'center'
     },
+    colHighlight: {
+        flex: 1,
+        alignItems: 'center',
+        backgroundColor: Colors.background,
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        marginHorizontal: 4,
+    },
     label: {
-        color: '#666',
-        fontSize: 12,
-        marginBottom: 3
+        color: Colors.textSecondary,
+        fontSize: 13,
+        marginBottom: 4,
+        fontWeight: '500'
     },
     value: {
-        color: '#000',
-        fontSize: 16,
+        color: Colors.text,
+        fontSize: 17,
+        fontWeight: '700'
+    },
+    valueSmall: {
+        color: Colors.text,
+        fontSize: 15,
         fontWeight: '600'
     },
     txt_title: {
-        color: '#000',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 10,
-        marginBottom: 5
+        color: Colors.text,
+        fontSize: 20,
+        fontWeight: '700'
     },
     line: {
         marginHorizontal: 10
     },
     item_container: {
         marginHorizontal: 10
-    }
+    },
+    actionButtonsContainer: {
+        marginBottom: 16,
+    },
+    addButton: {
+        backgroundColor: COLOR_APP.blue,
+        marginBottom: 12,
+        shadowColor: COLOR_APP.blue,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    addButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    secondaryButtonsRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    editButton: {
+        backgroundColor: Colors.background,
+        borderWidth: 1.5,
+        borderColor: COLOR_APP.blue,
+        flex: 1,
+        borderRadius: 10,
+    },
+    editButtonText: {
+        color: COLOR_APP.blue,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    deleteButton: {
+        backgroundColor: Colors.background,
+        borderWidth: 1.5,
+        borderColor: COLOR_APP.red,
+        flex: 1,
+        borderRadius: 10,
+    },
+    deleteButtonText: {
+        color: COLOR_APP.red,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    sectionIcon: {
+        width: 4,
+        height: 20,
+        backgroundColor: COLOR_APP.blue,
+        borderRadius: 2,
+        marginRight: 10,
+    },
+    listContent: {
+        paddingBottom: 20,
+    },
 })

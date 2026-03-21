@@ -11,6 +11,7 @@ import moment from 'moment';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
+import { DataFormSave } from '../types/Save.types';
 
 const dataOptions = [
   {
@@ -37,21 +38,6 @@ interface PopupFormSaveProps {
   onSuccess?: () => void;
 }
 
-interface DataFormSave {
-  type: number;
-  name: string;
-  quantity: string;
-  rate_value: string;
-  market_value: string;
-  total_value: string;
-  date_buy: number;
-  note: string;
-  asset_id: string;
-  user_id: string;
-  target: string;
-  category_id?: string;
-}
-
 const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
   const { onSuccess } = props;
 
@@ -76,8 +62,6 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
     type: TYPE_TRANSACTION.IN,
     name: '',
     quantity: '',
-    rate_value: '',
-    market_value: '',
     total_value: '',
     date_buy: moment(new Date()).unix(),
     note: '',
@@ -87,7 +71,7 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
   };
 
   const [dataForm, setDataForm] = useState<DataFormSave>(initData);
-  const { type, name, rate_value, total_value, date_buy, market_value, target } = dataForm;
+  const { name, total_value, date_buy } = dataForm;
   const date_ = new Date(date_buy * 1000);
   const dataStr = moment(date_buy * 1000).format('DD/MM/YYYY');
 
@@ -162,21 +146,13 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
   };
 
   const onChangeText = (value: string, field: string) => {
-    if (field === 'rate_value' && !isChangeMarket.current) {
-      setDataForm({
-        ...dataForm,
-        [field]: value,
-        market_value: value,
-      });
-    } else {
-      if (!isChangeMarket.current && field === 'market_value') {
+    if (!isChangeMarket.current && field === 'market_value') {
         isChangeMarket.current = true;
       }
       setDataForm({
         ...dataForm,
         [field]: value,
       });
-    }
   };
 
   const onCreate = async () => {
@@ -371,8 +347,6 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
         </View>
 
         {renderInputByKey('total_value', 'numeric')}
-
-        {renderInputByKey('rate_value', 'numeric')}
 
         {renderInputByKey('target', 'numeric')}
 

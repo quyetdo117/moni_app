@@ -2,16 +2,17 @@ import { commonStyles } from '@/utils/styles_shadow';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface HeaderProps {
     title: string,
     onBack?: Function,
-    isCenter?: boolean
+    isCenter?: boolean,
+    style_txt?: StyleProp<TextStyle>
 }
 
-export default function HeaderView({ title, onBack, isCenter }: HeaderProps) {
+export default function HeaderView({ title, onBack, isCenter, style_txt }: HeaderProps) {
     const insets = useSafeAreaInsets();
 
     const onPressBack = () => {
@@ -30,7 +31,7 @@ export default function HeaderView({ title, onBack, isCenter }: HeaderProps) {
             </RNBounceable>
             <View style={[{flex: 1, marginLeft: 10},
                 isCenter ? {alignItems: 'center'} : null]}>
-                <Text style={styles.title}>{title}</Text>
+                <Text style={[styles.title, style_txt]}>{title}</Text>
             </View>
             <View style={{ width: 22 }} />
         </View>

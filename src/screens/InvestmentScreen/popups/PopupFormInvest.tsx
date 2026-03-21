@@ -39,6 +39,10 @@ interface PopupFormInvestProps {
     onSuccess?: () => void;
 }
 
+export interface ShowPopupFormInvestConfig {
+    category_id?: string;
+}
+
 const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) => {
     const { onSuccess } = props;
 
@@ -92,7 +96,29 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
         }
     }
 
-    const onShow = () => {
+    const onShow = (config?: ShowPopupFormInvestConfig | string) => {
+        // Handle both string (category_id) and object config
+        const categoryId = typeof config === 'string' ? config : config?.category_id;
+        
+        if (categoryId) {
+            // Pre-select the category - try to find in loaded categories first
+            const category = categories.find(c => c.id === categoryId);
+            if (category) {
+                setSelectedAsset(category);
+                setDataForm(prev => ({
+                    ...prev,
+                    category_id: categoryId,
+                    name: category.name,
+                    market_value: category.market_value?.toString() || prev.market_value
+                }));
+            } else {
+                // Category not found in list yet, just set the category_id
+                setDataForm(prev => ({
+                    ...prev,
+                    category_id: categoryId
+                }));
+            }
+        }
         if (bottomSheetRef.current) {
             bottomSheetRef.current.snapToIndex(1);
         }

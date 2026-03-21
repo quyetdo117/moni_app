@@ -2,8 +2,6 @@ export interface DataFormSave {
   type: number;
   name: string;
   quantity: string;
-  rate_value: string;
-  market_value: string;
   total_value: string;
   date_buy: number;
   note: string;

@@ -1,12 +1,13 @@
 import BoxSwipeable from '@/components/common/BoxSwipeable';
+import ButtonCustom from '@/components/common/ButtonCustom';
 import EmptyView from '@/components/common/EmptyView';
 import HeaderView from '@/components/common/HeaderView';
 import ItemSavePayment from '@/components/items/ItemSavePayment';
 import { PopupConfirm } from '@/components/popups/PopupConfirm';
 import { PopupToast } from '@/components/popups/PopupToast';
-import { COLOR_APP, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
+import { COLOR_APP, Colors, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
 import { getListTransaction } from '@/services/Api/get.services';
-import { deleteTransaction } from '@/services/Api/transaction.services';
+import { deleteCategory, deleteTransaction } from '@/services/Api/transaction.services';
 import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
 import { InfoTransaction } from '@/types/info.types';
 import { RootStackScreenProps } from '@/types/navigation.types';
@@ -15,7 +16,9 @@ import { formatSmartMoney } from '@/utils/convertData';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import PopupEditSaveCategory from '../popups/PopupEditSaveCategory';
 import PopupEditSaveTransaction from '../popups/PopupEditSaveTransaction';
+import PopupFormSave from '../popups/PopupFormSave';
 
 interface DataItem {
     item: InfoTransaction;
@@ -41,6 +44,8 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
     const setInfoAsset = useUserStore(state => state.setInfoAsset);
     const updateChartData = useChartStore(state => state.updateChartData);
     const editTransactionRef = useRef<PopupRef>(null);
+    const editCategoryRef = useRef<PopupRef>(null);
+    const createTransactionRef = useRef<PopupRef>(null);
     const deleteConfirmRef = useRef<PopupRef>(null);
     const toastRef = useRef<PopupRef>(null);
     const [dataList, setDataList] = useState<InfoTransaction[]>([]);
@@ -64,6 +69,103 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
     const onBack = () => {
         navigation?.goBack();
+    };
+
+    // Button handlers for category
+    const onEditCategory = () => {
+        if (editCategoryRef.current) {
+            editCategoryRef.current.onShow(saveData);
+        }
+    };
+
+    const onDeleteCategory = () => {
+        if (deleteConfirmRef.current) {
+            deleteConfirmRef.current.onShow({
+                title: 'Bạn có chắc chắn muốn xóa danh mục này?',
+                data: saveData,
+                onConfirm: confirmDeleteCategory,
+                onCancel: () => {}
+            });
+        }
+    };
+
+    const confirmDeleteCategory = async (data: SaveDetailData) => {
+        try {
+            const jsonData = await deleteCategory(data.id, uid || '');
+            if (jsonData.success) {
+                // Update store - remove this category from list
+                const updatedListSave = listSave.filter(item => item.id !== data.id);
+                setListSave(updatedListSave);
+
+                // Update infoAsset
+                if (infoAsset?.['save']) {
+                    const currentTotalSave = infoAsset['save'].total_value || 0;
+                    const currentTotalMarket = infoAsset['save'].total_market || 0;
+                    const newTotalSave = currentTotalSave - (data.total_value || 0);
+                    const newTotalMarket = currentTotalMarket - (data.total_market || 0);
+                    
+                    const updatedAsset = {
+                        ...infoAsset['save'],
+                        total_value: newTotalSave,
+                        total_market: newTotalMarket || 0
+                    };
+                    
+                    const updatedAssetExpense = {
+                        ...infoAsset['expense'],
+                        total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_value || 0)
+                    };
+                    
+                    setInfoAsset([updatedAsset as any, updatedAssetExpense as any]);
+                }
+
+                toastRef.current?.onShow({
+                    message: 'Xóa danh mục thành công',
+                    type: 'success',
+                    duration: 2000
+                });
+                
+                // Navigate back
+                navigation?.goBack();
+            } else {
+                toastRef.current?.onShow({
+                    message: jsonData.message || 'Xóa danh mục thất bại',
+                    type: 'error',
+                    duration: 2000
+                });
+            }
+        } catch (error: any) {
+            toastRef.current?.onShow({
+                message: error.message || 'Xóa danh mục thất bại',
+                type: 'error',
+                duration: 2000
+            });
+        }
+    };
+
+    const onCreateTransaction = () => {
+        if (createTransactionRef.current) {
+            createTransactionRef.current.onShow(saveData.id);
+        }
+    };
+
+    const onCreateTransactionSuccess = () => {
+        onGetData();
+    };
+
+    const onEditCategorySuccess = (updatedData: SaveDetailData) => {
+        setSaveData(updatedData);
+        
+        // Update list
+        const updatedListSave = listSave.map(item =>
+            item.id === updatedData.id ? { ...item, ...updatedData } as any : item
+        );
+        setListSave(updatedListSave);
+
+        toastRef.current?.onShow({
+            message: 'Cập nhật thành công',
+            type: 'success',
+            duration: 2000
+        });
     };
 
     const keyExtractor_ = (item: InfoTransaction, index: number) => index.toString();
@@ -236,6 +338,36 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
     const targetAmount = saveData.target || 0;
     const progress = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 100;
 
+    // Render action buttons row
+    const renderActionButtons = () => {
+        return (
+            <View style={styles.actionButtonsContainer}>
+                <ButtonCustom 
+                    title="Thêm giao dịch" 
+                    onPress={onCreateTransaction}
+                    style_btn={styles.addButton}
+                    style_txt={styles.addButtonText}
+                />
+                
+                <View style={styles.secondaryButtonsRow}>
+                    <ButtonCustom 
+                        title="Sửa" 
+                        onPress={onEditCategory}
+                        style_btn={styles.editButton}
+                        style_txt={styles.editButtonText}
+                    />
+                    
+                    <ButtonCustom 
+                        title="Xóa" 
+                        onPress={onDeleteCategory}
+                        style_btn={styles.deleteButton}
+                        style_txt={styles.deleteButtonText}
+                    />
+                </View>
+            </View>
+        );
+    }
+
     const renderHeader = () => {
         return (
             <View style={styles.container_header}>
@@ -286,7 +418,13 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
                         </View>
                     )}
                 </View>
-                <Text style={styles.txt_title}>{'Lịch sử giao dịch'}</Text>
+                
+                {renderActionButtons()}
+                
+                <View style={styles.sectionHeader}>
+                    <View style={styles.sectionIcon} />
+                    <Text style={styles.txt_title}>{'Lịch sử tiết kiệm'}</Text>
+                </View>
             </View>
         );
     };
@@ -305,7 +443,9 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
                     keyExtractor={keyExtractor_}
                     ListEmptyComponent={<EmptyView />}
                 />
+                <PopupFormSave ref={createTransactionRef} onSuccess={onCreateTransactionSuccess} />
                 <PopupEditSaveTransaction ref={editTransactionRef} onSuccess={onUpdateSuccess} />
+                <PopupEditSaveCategory ref={editCategoryRef} onSuccess={onEditCategorySuccess} />
                 <PopupConfirm ref={deleteConfirmRef} />
                 <PopupToast ref={toastRef} />
             </View>
@@ -315,17 +455,23 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1
+        flex: 1,
+        backgroundColor: Colors.background
     },
     container_header: {
-        marginHorizontal: 10,
-        marginBottom: 10
+        marginHorizontal: 16,
+        marginTop: 15
     },
     box_info: {
-        backgroundColor: '#f2f6f9',
-        borderRadius: 15,
-        padding: 15,
-        marginBottom: 15
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
     row: {
         flexDirection: 'row',
@@ -349,9 +495,7 @@ const styles = StyleSheet.create({
     txt_title: {
         color: '#000',
         fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 10,
-        marginBottom: 5
+        fontWeight: 'bold'
     },
     targetContainer: {
         marginTop: 10,
@@ -399,5 +543,64 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1a1a1a',
         marginLeft: 4,
+    },
+    // Action Buttons
+    actionButtonsContainer: {
+        marginBottom: 16,
+    },
+    addButton: {
+        backgroundColor: COLOR_APP.blue,
+        borderRadius: 12,
+        marginBottom: 12,
+        shadowColor: COLOR_APP.blue,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    addButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    secondaryButtonsRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    editButton: {
+        backgroundColor: Colors.background,
+        borderWidth: 1.5,
+        borderColor: COLOR_APP.blue,
+        flex: 1,
+        borderRadius: 10,
+    },
+    editButtonText: {
+        color: COLOR_APP.blue,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    deleteButton: {
+        backgroundColor: Colors.background,
+        borderWidth: 1.5,
+        borderColor: COLOR_APP.red,
+        flex: 1,
+        borderRadius: 10,
+    },
+    deleteButtonText: {
+        color: COLOR_APP.red,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    sectionIcon: {
+        width: 4,
+        height: 20,
+        backgroundColor: COLOR_APP.blue,
+        borderRadius: 2,
+        marginRight: 10,
     },
 });
