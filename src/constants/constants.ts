@@ -1,9 +1,18 @@
-import { type_asset } from "@/types/schema.types"
+import { type_asset } from "@/types/schema.types";
+import { Colors } from "./theme";
+
+// ============================================
+// TRANSACTION TYPES
+// ============================================
 
 export const TYPE_TRANSACTION = {
     IN: 1,
     OUT: 0
 }
+
+// ============================================
+// EXPENSE CATEGORIES - Clean and minimal
+// ============================================
 
 export const categories_expense = [
     {
@@ -30,7 +39,6 @@ export const categories_expense = [
         title: 'Khác',
         type: TYPE_TRANSACTION.OUT
     },
-
 ]
 
 export const types_expense = [
@@ -46,71 +54,85 @@ export const types_expense = [
     }
 ]
 
+// ============================================
+// ASSET KEYS
+// ============================================
+
 export const key_assets: Record<string, type_asset> = {
     expense: 'expense',
     invest: 'invest',
     save: 'save'
 }
 
+// ============================================
+// COLOR APP - Modern Minimalist palette
+// ============================================
+
 export const COLOR_APP = {
-    blue: '#1a73e8',
-    green: '#009900',
-    yellow: '#f9ab00',
-    red: '#d93025',
-    gray: '#2f3030'
+    // Primary colors
+    primary: Colors.primary,
+    primaryLight: Colors.primaryLight,
+    secondary: Colors.secondary,
+    
+    // Semantic colors
+    blue: Colors.accent,
+    green: Colors.success,
+    yellow: Colors.warning,
+    red: Colors.error,
+    gray: Colors.textSecondary,
+    
+    // Background colors
+    background: Colors.background,
+    surface: Colors.surface,
+    surfaceElevated: Colors.surfaceElevated,
+    
+    // Text colors
+    text: Colors.text,
+    textSecondary: Colors.textSecondary,
+    textTertiary: Colors.textTertiary,
+    
+    // Border
+    border: Colors.border,
+    divider: Colors.divider,
 }
 
-export const Colors = {
-    primary: '#1a73e8',
-    background: '#ffffff',
-    surface: '#f5f5f5',
-    text: '#1a1a1a',
-    textSecondary: '#666666',
-    border: '#e0e0e0',
-    success: '#4caf50',
-    warning: '#ff9800',
-    error: '#f44336',
-}
+// ============================================
+// CATEGORY COLORS - Modern muted palette
+// ============================================
 
 export const getColorCategory = (type: number): string => {
-    let result = ''
-    if (type === 1) {
-        result = '#1a73e8'
-    } else if (type === 2) {
-        result = '#f9ab00'
-    } else if (type === 3) {
-        result = '#d93025'
-    } else if (type === 4) {
-        result = '#b90e77'
-    } else if (type === 5) {
-        result = '#06a101'
-    } else if (type === 6) {
-        result = '#2f3030'
-    }else if (type === 7) {
-        result = '#e0dd02'
-    } else if (type === 8) {
-        result = '#01ec3c'
-    }
-    return result
+    const categoryColors: Record<number, string> = {
+        1: '#4F46E5',    // Indigo - Income
+        2: '#F59E0B',   // Amber - Fixed
+        3: '#EF4444',   // Red - Food
+        4: '#8B5CF6',   // Purple - Transport
+        5: '#10B981',   // Green - Personal
+        6: '#6B7280',   // Gray - Other
+        7: '#F59E0B',   // Amber - Invest
+        8: '#3B82F6',   // Blue - Save
+    };
+    return categoryColors[type] || Colors.textSecondary;
 }
 
+// ============================================
+// TRANSACTION COLORS - Soft, muted tones
+// ============================================
+
 export const getColorTransaction = (type: number): string => {
-    let result = ''
-    if (type === 1) {
-        result = '#b3c9e6'
-    } else if (type === 2) {
-        result = '#f0dcb1'
-    } else if (type === 3) {
-        result = '#d89f9b'
-    } else if (type === 4) {
-        result = '#b682a2'
-    } else if (type === 5) {
-        result = '#7a9779'
-    } else if (type === 6) {
-        result = '#9da1a1'
-    }
-    return result
+    const transactionColors: Record<number, string> = {
+        1: '#E0E7FF',   // Light indigo
+        2: '#FEF3C7',   // Light amber
+        3: '#FEE2E2',   // Light red
+        4: '#F3E8FF',   // Light purple
+        5: '#D1FAE5',   // Light green
+        6: '#F3F4F6',   // Light gray
+    };
+    return transactionColors[type] || Colors.divider;
 }
+
+// ============================================
+// DATABASE TABLES
+// ============================================
 
 export const tables_name = {
     USER: 'Users',
@@ -118,6 +140,10 @@ export const tables_name = {
     CATEGORY: 'Categories',
     TRANSACTION: 'Transactions'
 }
+
+// ============================================
+// DISPLAY TYPES
+// ============================================
 
 export const types_display = {
     move: 1,

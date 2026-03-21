@@ -4,9 +4,9 @@ import ItemPayment from '@/components/items/ItemPayment';
 import { getListTransaction } from '@/services/Api/get.services';
 import { useUserStore } from '@/store/main.store';
 import { InfoTransaction } from '@/types/info.types';
-import { commonStyles } from '@/utils/styles_shadow';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 
 export default function RecentBox() {
 
@@ -21,57 +21,82 @@ export default function RecentBox() {
     const data = await getListTransaction(uid);
     if (data.success) {
       const listData = data?.data as InfoTransaction[] || [];
-      setDataList(listData);
+      // Take only first 10 items for recent transactions
+      setDataList(listData.slice(0, 5));
     } else {
       console.log('error', data.msg)
     }
   }
 
+  const renderItem = ({ item, index }: { item: InfoTransaction; index: number }) => (
+    <View>
+      {index !== 0 && <LineList style={styles.separator} />}
+      <ItemPayment data={item} />
+    </View>
+  );
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.title}>{'Gần đây'}</Text>
+    </View>
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <EmptyView />
+    </View>
+  );
+
   return (
-    <View style={[styles.container, commonStyles.box_shadow]}>
-      <View style={styles.box_header}>
-        <Text style={styles.txt_title}>{'Gần đây'}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        {
-          !!dataList.length ? dataList.map((item, index) => {
-            return (
-              <View key={index}>
-                {index !== 0 && <LineList style={styles.line} />}
-                <ItemPayment data={item} />
-              </View>
-            )
-          }) : <EmptyView />
-        }
-      </View>
+    <View style={styles.container}>
+      {renderHeader()}
+      <FlatList
+        data={dataList}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => item.id || index.toString()}
+        ListEmptyComponent={renderEmpty}
+        scrollEnabled={false}
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    // flex: 1,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-    marginHorizontal: 10,
-    marginTop: 20
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.xl,
+    marginHorizontal: Spacing.base,
+    marginTop: Spacing.lg,
+    paddingBottom: Spacing.base,
+    shadowColor: '#1A1A2E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: Spacing.xl
   },
-  txt_title: {
-    color: '#fff',
-    fontWeight: '600',
-    textAlign: 'center',
-    marginVertical: 5,
-    fontSize: 14
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
   },
-  box_header: {
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    backgroundColor: '#1a73e8'
+  title: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semiBold,
+    color: Colors.text,
   },
-  line: {
-    marginHorizontal: 10
-  }
+  separator: {
+    marginHorizontal: Spacing.base,
+  },
+  emptyContainer: {
+    paddingVertical: Spacing.xl,
+  },
+  listContent: {
+    paddingTop: Spacing.sm,
+  },
 })

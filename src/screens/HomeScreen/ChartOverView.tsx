@@ -3,20 +3,22 @@ import { getPieChartData, PieChartData } from '@/services/Api/get.services';
 import { useChartStore, useUserStore } from '@/store/main.store';
 import { ChartDataItemStore } from '@/store/store.types';
 import { formatSmartMoney_2 } from '@/utils/convertData';
-import RNBounceable from '@freakycoder/react-native-bounceable';
+import { commonStyles } from '@/utils/styles_shadow';
 import React, { useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { PieChart } from "react-native-gifted-charts";
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 
 const width = Dimensions.get('window').width;
-const WIDTH_CHART = (width - 230) / 2;
+const WIDTH_CHART = (width - 240) / 2;
 
+// Modern Minimalist Color Palette
 const COLORS = {
-    income: '#54A0FF',
-    expense: '#FF8383',
-    invest: '#A29BFE',
-    save: '#55E6C1',
-    inCircle: '#162472'
+    income: '#10B981',     // Success green
+    expense: '#EF4444',   // Error red
+    invest: '#8B5CF6',    // Purple
+    save: '#3B82F6',      // Blue
+    inCircle: Colors.surface  // White/light background
 };
 
 const DEFAULT_NOTES = [
@@ -32,7 +34,7 @@ export default function ChartOverView() {
     const { pieDataIn, pieDataOut,
         dataFocusIn, dataFocusOut,
         setPieDataIn, setPieDataOut,
-        setDataFocusIn, setDataFocusOut, chartDateRange, setChartDateRange } = useChartStore();
+        setDataFocusIn, setDataFocusOut, setChartDateRange } = useChartStore();
 
     // Get date range for chart
     const getChartDateRange = () => {
@@ -142,17 +144,17 @@ export default function ChartOverView() {
     const renderCenterIn = () => {
         if (!dataFocusIn) {
             return (
-                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, color: 'white' }}>{'0'}</Text>
+                <View style={styles.centerContent}>
+                    <Text style={styles.centerValue}>{'0'}</Text>
                 </View>
             );
         }
         return (
-            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ fontSize: 18, color: 'white', fontWeight: 'bold' }}>
+            <View style={styles.centerContent}>
+                <Text style={styles.centerValue}>
                     {formatSmartMoney_2(dataFocusIn.value)}
                 </Text>
-                <Text style={{ fontSize: 12, color: 'white' }}>{dataFocusIn.title}</Text>
+                <Text style={styles.centerLabel}>{dataFocusIn.title}</Text>
             </View>
         );
     };
@@ -160,29 +162,29 @@ export default function ChartOverView() {
     const renderCenterOut = () => {
         if (!dataFocusOut) {
             return (
-                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 14, color: 'white' }}>{'0'}</Text>
+                <View style={styles.centerContent}>
+                    <Text style={styles.centerValue}>{'0'}</Text>
                 </View>
             );
         }
         return (
-            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ fontSize: 18, color: 'white', fontWeight: 'bold' }}>
+            <View style={styles.centerContent}>
+                <Text style={styles.centerValue}>
                     {formatSmartMoney_2(dataFocusOut.value)}
                 </Text>
-                <Text style={{ fontSize: 12, color: 'white' }}>{dataFocusOut.title}</Text>
+                <Text style={styles.centerLabel}>{dataFocusOut.title}</Text>
             </View>
         );
     };
 
     const renderNote = () => {
         return (
-            <View style={styles.note_container}>
+            <View style={styles.noteContainer}>
                 {DEFAULT_NOTES.map((item, index) => {
                     return (
-                        <View key={index} style={styles.item_note}>
-                            <View style={[styles.point, { backgroundColor: item.color }]} />
-                            <Text style={styles.txt_note}>{item.title}</Text>
+                        <View key={index} style={styles.noteItem}>
+                            <View style={[styles.noteDot, { backgroundColor: item.color }]} />
+                            <Text style={styles.noteText}>{item.title}</Text>
                         </View>
                     );
                 })}
@@ -190,24 +192,22 @@ export default function ChartOverView() {
         );
     };
 
-    const totalIn = pieDataIn.reduce((sum, item) => sum + item.value, 0);
-    const totalOut = pieDataOut.reduce((sum, item) => sum + item.value, 0);
-
     return (
         <View style={styles.container}>
-            <View style={styles.box_header}>
-                <Text style={styles.title}>{'Tổng quan'}</Text>
-                <RNBounceable style={styles.box_date}>
-                    <Text>{'Tháng này'}</Text>
-                </RNBounceable>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.title}>{''}</Text>
+                <View style={styles.dateBadge}>
+                    <Text style={styles.dateText}>{'Tháng này'}</Text>
+                </View>
             </View>
 
             {/* Two charts side by side */}
-            <View style={styles.charts_row}>
+            <View style={styles.chartsRow}>
                 {/* Chart for In (Dòng tiền vào) */}
-                <View style={styles.chart_section}>
-                    <Text style={styles.chart_title}>{'Dòng tiền vào'}</Text>
-                    <View style={styles.box_chart}>
+                <View style={[styles.chartCard, commonStyles.box_shadow]}>
+                    <Text style={styles.chartTitle}>{'Dòng tiền vào'}</Text>
+                    <View style={styles.chartContainer}>
                         {pieDataIn.length > 0 ? (
                             <PieChart
                                 data={pieDataIn}
@@ -215,23 +215,23 @@ export default function ChartOverView() {
                                 sectionAutoFocus
                                 radius={WIDTH_CHART}
                                 focusOnPress
-                                innerRadius={35}
+                                innerRadius={40}
                                 innerCircleColor={COLORS.inCircle}
                                 onPress={onSelectChartIn}
                                 centerLabelComponent={renderCenterIn}
                             />
                         ) : (
-                            <View style={[styles.empty_chart, { backgroundColor: COLORS.inCircle }]}>
-                                <Text style={styles.no_data}>0</Text>
+                            <View style={[styles.emptyChart, { backgroundColor: Colors.surfaceElevated }]}>
+                                <Text style={styles.noData}>0</Text>
                             </View>
                         )}
                     </View>
                 </View>
 
                 {/* Chart for Out (Dòng tiền ra) */}
-                <View style={styles.chart_section}>
-                    <Text style={styles.chart_title}>{'Dòng tiền ra'}</Text>
-                    <View style={styles.box_chart}>
+                <View style={[styles.chartCard, commonStyles.box_shadow]}>
+                    <Text style={styles.chartTitle}>{'Dòng tiền ra'}</Text>
+                    <View style={styles.chartContainer}>
                         {pieDataOut.length > 0 ? (
                             <PieChart
                                 data={pieDataOut}
@@ -239,21 +239,21 @@ export default function ChartOverView() {
                                 sectionAutoFocus
                                 radius={WIDTH_CHART}
                                 focusOnPress
-                                innerRadius={35}
+                                innerRadius={40}
                                 innerCircleColor={COLORS.inCircle}
                                 onPress={onSelectChartOut}
                                 centerLabelComponent={renderCenterOut}
                             />
                         ) : (
-                            <View style={[styles.empty_chart, { backgroundColor: COLORS.inCircle }]}>
-                                <Text style={styles.no_data}>0</Text>
+                            <View style={[styles.emptyChart, { backgroundColor: Colors.surfaceElevated }]}>
+                                <Text style={styles.noData}>0</Text>
                             </View>
                         )}
                     </View>
                 </View>
             </View>
 
-            {/* Common note - horizontal */}
+            {/* Legend */}
             {renderNote()}
         </View>
     );
@@ -261,82 +261,100 @@ export default function ChartOverView() {
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 10,
-        marginHorizontal: 10
+        marginTop: Spacing.base,
+        marginHorizontal: Spacing.md
     },
-    charts_row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between'
-    },
-    chart_section: {
-        flex: 1,
-        marginHorizontal: 5,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 10,
-        padding: 10
-    },
-    chart_title: {
-        fontWeight: '600',
-        fontSize: 16,
-        marginBottom: 15
-    },
-    total_amount: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 10
-    },
-    box_chart: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 120
-    },
-    empty_chart: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-    note_container: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 15
-    },
-    point: {
-        width: 12,
-        height: 12,
-        borderRadius: 20
-    },
-    item_note: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 10
-    },
-    txt_note: {
-        marginLeft: 8,
-        fontWeight: '600',
-        fontSize: 12
-    },
-    box_date: {
-        alignSelf: 'flex-start',
-        borderRadius: 5,
-        paddingHorizontal: 5,
-        paddingVertical: 2,
-        borderWidth: 0.5
-    },
-    box_header: {
+    header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10
+        marginBottom: Spacing.base,
     },
     title: {
-        fontWeight: '600',
-        fontSize: 22
+        fontWeight: Typography.fontWeight.bold,
+        fontSize: Typography.fontSize.xl,
+        color: Colors.text,
     },
-    no_data: {
-        fontSize: 16,
-        color: 'white',
-        fontWeight: 'bold'
-    }
+    dateBadge: {
+        backgroundColor: Colors.surface,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.full,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    dateText: {
+        fontSize: Typography.fontSize.sm,
+        color: Colors.textSecondary,
+    },
+    chartsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: Spacing.sm,
+    },
+    chartCard: {
+        flex: 1,
+        backgroundColor: Colors.surface,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.base,
+    },
+    chartTitle: {
+        fontWeight: Typography.fontWeight.semiBold,
+        fontSize: Typography.fontSize.base,
+        color: Colors.text,
+        marginBottom: Spacing.sm,
+        textAlign: 'center',
+    },
+    chartContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 120,
+    },
+    emptyChart: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    centerValue: {
+        fontSize: Typography.fontSize.lg,
+        fontWeight: Typography.fontWeight.bold,
+        color: Colors.text,
+    },
+    centerLabel: {
+        fontSize: Typography.fontSize.xs,
+        color: Colors.textSecondary,
+        marginTop: 2,
+    },
+    noData: {
+        fontSize: Typography.fontSize.lg,
+        color: Colors.textTertiary,
+        fontWeight: Typography.fontWeight.medium,
+    },
+    noteContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: Spacing.base,
+        flexWrap: 'wrap',
+        gap: Spacing.sm,
+    },
+    noteItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    noteDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    noteText: {
+        marginLeft: Spacing.xs,
+        fontSize: Typography.fontSize.xs,
+        color: Colors.textSecondary,
+    },
 });

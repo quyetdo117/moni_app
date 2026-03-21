@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { Colors } from '../../constants/constants';
+import { Colors } from '../../constants/theme';
 import { PopupRef } from '../../types/view.types';
 
 export interface ShowPopupConfig {

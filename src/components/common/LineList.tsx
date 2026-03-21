@@ -1,5 +1,6 @@
 import React from 'react'
 import { StyleSheet, View, ViewStyle } from 'react-native'
+import { Colors, Spacing } from '../../constants/theme'
 
 interface LineProps {
     style?: ViewStyle
@@ -13,8 +14,8 @@ export default function LineList({style}: LineProps) {
 
 const styles = StyleSheet.create({
     line: {
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        backgroundColor: '#999',
-        marginVertical: 2
+        height: 1,
+        backgroundColor: Colors.divider,
+        marginVertical: Spacing.xs
     }
 })

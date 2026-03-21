@@ -5,6 +5,7 @@ import { formatSmartMoney, getIconByTypeDisplay } from '@/utils/convertData';
 import moment from 'moment';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 
 interface dataPayment {
   data: InfoTransaction
@@ -18,62 +19,86 @@ export default function ItemPayment({ data }: dataPayment) {
   const isInvest = asset_id === infoAsset.invest?.id;
   const isExpense = asset_id === infoAsset.expense?.id;
   const dateStr = moment(date_buy * 1000).format('DD/MM/YYYY');
-  const color_title = (type == TYPE_TRANSACTION.IN && isExpense) || (type == TYPE_TRANSACTION.OUT && isInvest)
+  const colorTitle = (type == TYPE_TRANSACTION.IN && isExpense) || (type == TYPE_TRANSACTION.OUT && isInvest)
     ? COLOR_APP.green : COLOR_APP.red;
   const prefix = (type == TYPE_TRANSACTION.IN && isExpense) || (type == TYPE_TRANSACTION.OUT && isInvest)
     ? '+' : '-';
 
   const infoIcon = getIconByTypeDisplay(type_display);
-  const {name, library, color} = infoIcon;
+  const { name, library, color } = infoIcon;
   const IconCategory = library;
+  
   return (
-    <View style={[styles.container]}>
-      <View style={[styles.row, { marginBottom: 2 }]}>
-        <View style={[styles.row, { alignItems: 'center' }]}>
-          <IconCategory size={20} name={name} color={color} />
-          <Text style={[styles.title]}>{
-            data.name
-          }</Text>
-        </View>
-        <Text style={[{ color: color_title },
-        styles.money]}>{`${prefix}${formatSmartMoney(data.total_value)}`}
-        </Text>
+    <View style={styles.container}>
+      {/* Left: Icon */}
+      <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
+        <IconCategory size={18} name={name} color={color} />
       </View>
-      <View style={styles.row}>
-        <Text style={styles.note}>{data.note}</Text>
-        <Text style={[styles.note, { marginLeft: 15 }]}>{dateStr}</Text>
+
+      {/* Middle: Title & Note */}
+      <View style={styles.contentContainer}>
+        <Text style={styles.title} numberOfLines={1}>
+          {data.name}
+        </Text>
+        {data.note ? (
+          <Text style={styles.note} numberOfLines={1}>{data.note}</Text>
+        ) : null}
+      </View>
+
+      {/* Right: Amount */}
+      <View style={styles.amountContainer}>
+        <Text style={[styles.amount, { color: colorTitle }]}>
+          {`${prefix}${formatSmartMoney(data.total_value)}`}
+        </Text>
+        <Text style={styles.dateRight}>{dateStr}</Text>
       </View>
     </View>
   )
 }
 
-
 const styles = StyleSheet.create({
-  row: {
+  container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start'
+    alignItems: 'center',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
   },
-  money: {
-    fontWeight: '600',
-    fontSize: 14
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
   },
-  note: {
-    fontSize: 12,
-    color: '#666'
+  contentContainer: {
+    flex: 1,
+    marginRight: Spacing.sm,
   },
   title: {
-    fontWeight: '600',
-    fontSize: 14,
-    marginLeft: 10
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.text,
+    marginBottom: 2,
   },
-  container: {
-    marginHorizontal: 15,
-    marginVertical: 5
+  note: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textTertiary,
   },
-  point: {
-    width: 10,
-    height: 10,
-    borderRadius: 10
-  }
+  date: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textTertiary,
+  },
+  amountContainer: {
+    alignItems: 'flex-end',
+  },
+  amount: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semiBold,
+  },
+  dateRight: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textTertiary,
+    marginTop: 2,
+  },
 })

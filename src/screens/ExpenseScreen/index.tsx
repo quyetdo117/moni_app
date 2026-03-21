@@ -1,3 +1,4 @@
+
 import BoxMoney from '@/components/common/BoxMoney';
 import BoxSwipeable from '@/components/common/BoxSwipeable';
 import EmptyView from '@/components/common/EmptyView';
@@ -19,6 +20,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 import ChartPayment, { ChartRef } from './items/ChartPayment';
 import ItemCategory from './items/ItemCategory';
 import PopupFormExpense from './popups/PopupExpense';
@@ -189,71 +191,89 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
 
     const renderHeader = useMemo(() => {
         return (
-            <View style={{ flex: 1 }}>
-                <View style={styles.top_header}>
-                    <View style={styles.header}>
-                        <MaterialIcons name="date-range" size={22} color="black" />
-                        <Text style={styles.date}>{'Tháng này'}</Text>
+            <View style={styles.headerContent}>
+                {/* Top Section */}
+                <View style={styles.topHeader}>
+                    <View style={styles.dateContainer}>
+                        <MaterialIcons name="date-range" size={20} color={Colors.textSecondary} />
+                        <Text style={styles.dateText}>{'Tháng này'}</Text>
                     </View>
-                    <RNBounceable style={styles.btn_create} onPress={onCreate}>
-                        <FontAwesome6 name="add" size={18} color={COLOR_APP.blue} />
-                        <Text style={styles.txt_create}>{'Tạo mới'}</Text>
+                    <RNBounceable style={styles.createButton} onPress={onCreate}>
+                        <FontAwesome6 name="plus" size={16} color={Colors.accent} />
+                        <Text style={styles.createText}>{'Tạo mới'}</Text>
                     </RNBounceable>
                 </View>
-                <View>
-                    <View style={styles.box_overview}>
-                        {
-                            data_base.current.map((item, index) => {
-                                const isSelected = item.type === selectedType;
-                                return <BoxMoney
+
+                {/* Overview Cards */}
+                <View style={styles.overviewContainer}>
+                    {
+                        data_base.current.map((item, index) => {
+                            const isSelected = item.type === selectedType;
+                            const isExpense = item.type === 0;
+                            return (
+                                <BoxMoney
                                     onPress={onPressType}
-                                    style_box={item.type === 0 && { backgroundColor: isSelected ? '#009900' : '#e0e0e0' }}
-                                    style={{ flex: 1 }} data={item}
-                                    style_txt={item.type === 0 && { color: isSelected ? '#fff' : '#666' }}
-                                    key={index} />
+                                    style={[{ flex: 1 }, isExpense ? {marginLeft: Spacing.md} : null]}
+                                    data={item}
+                                    variant={isSelected ? 'success' : 'default'}
+                                    key={index}
+                                />
+                            )
+                        })
+                    }
+                </View>
+
+                {/* Categories */}
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.categoriesContainer}
+                >
+                    <View style={styles.categoriesRow}>
+                        {
+                            categories.map((item, index) => {
+                                const type_display = item.type_display;
+                                if (type_display == 5) return null;
+                                return (
+                                    <ItemCategory
+                                        onPress={onPressType}
+                                        style_box={type_display ?
+                                            { backgroundColor: getColorCategory(type_display) } : null} 
+                                        data={item} 
+                                        key={index} 
+                                    />
+                                )
                             })
                         }
                     </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        <View>
-                            <View style={styles.list}>
-                                {
-                                    categories.map((item, index) => {
-                                        const type_display = item.type_display;
-                                        if (type_display == 5) return null;
-                                        return <ItemCategory
-                                            onPress={onPressType}
-                                            style_box={type_display ?
-                                                { backgroundColor: getColorCategory(type_display) } : null} data={item} key={index} />
-                                    })
-                                }
-                            </View>
-                        </View>
-                    </ScrollView>
-                    <ChartPayment ref={refChart} />
-                </View>
-                <View>
-                    <Text style={styles.txt_recent}>{'Gần đây'}</Text>
+                </ScrollView>
+
+                {/* Chart */}
+                <ChartPayment ref={refChart} />
+
+                {/* Recent Transactions Header */}
+                <View style={styles.recentHeader}>
+                    <Text style={styles.recentTitle}>{'Gần đây'}</Text>
                 </View>
             </View>
         )
-    }, [categories])
+    }, [categories, selectedType])
 
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}>
-
+            style={styles.container}
+        >
             <View style={styles.container}>
-                <HeaderView onBack={onBack} title={'Khoản chi tiêu'} />
+                <HeaderView onBack={onBack} title={'Chi tiêu'} />
                 <FlatList
                     ListHeaderComponent={renderHeader}
                     renderItem={renderItem}
-                    ItemSeparatorComponent={() => <LineList style={styles.line} />}
+                    ItemSeparatorComponent={() => <LineList style={styles.separator} />}
                     data={dataList}
                     keyExtractor={keyExtractor_}
-
                     ListEmptyComponent={<EmptyView />}
+                    contentContainerStyle={styles.listContent}
                 />
                 <PopupFormExpense onRefresh={onRefresh} ref={refPopupForm} />
                 <PopupConfirm ref={refPopupConfirm} />
@@ -265,52 +285,70 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1
+        flex: 1,
+        backgroundColor: Colors.background,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        paddingVertical: 10
+    headerContent: {
+        paddingTop: Spacing.md,
     },
-    date: {
-        color: '#333',
-        marginLeft: 5
-    },
-    box_overview: {
-        flexDirection: 'row',
-        marginHorizontal: 5
-    },
-    list: {
-        flexDirection: 'row',
-        marginVertical: 10,
-        paddingRight: 10,
-        height: 40
-    },
-    btn_create: {
-        flexDirection: 'row',
-        alignItems: 'center'
-    },
-    txt_create: {
-        color: COLOR_APP.blue,
-        fontWeight: '600',
-        fontSize: 14,
-        marginLeft: 5
-    },
-    top_header: {
+    topHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginHorizontal: 10
+        paddingHorizontal: Spacing.base,
+        marginBottom: Spacing.md,
     },
-    txt_recent: {
-        color: '#000',
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginHorizontal: 10,
-        marginBottom: 10
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    line: {
-        marginHorizontal: 10
-    }
+    dateText: {
+        color: Colors.textSecondary,
+        fontSize: Typography.fontSize.base,
+        marginLeft: Spacing.xs,
+        fontWeight: Typography.fontWeight.medium,
+    },
+    createButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.surface,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.full,
+    },
+    createText: {
+        color: Colors.accent,
+        fontWeight: Typography.fontWeight.semiBold,
+        fontSize: Typography.fontSize.sm,
+        marginLeft: Spacing.xs,
+    },
+    overviewContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: Spacing.md,
+        marginBottom: Spacing.base,
+    },
+    categoriesContainer: {
+        maxHeight: 50,
+        marginBottom: Spacing.base,
+    },
+    categoriesRow: {
+        flexDirection: 'row',
+        paddingHorizontal: Spacing.sm,
+    },
+    recentHeader: {
+        paddingHorizontal: Spacing.base,
+        marginBottom: Spacing.sm,
+        marginTop: Spacing.sm,
+    },
+    recentTitle: {
+        color: Colors.text,
+        fontSize: Typography.fontSize.xl,
+        fontWeight: Typography.fontWeight.bold,
+    },
+    separator: {
+        marginHorizontal: Spacing.base,
+    },
+    listContent: {
+        paddingBottom: 100,
+    },
 })

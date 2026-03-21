@@ -1,7 +1,8 @@
+
 import BoxMoney from '@/components/common/BoxMoney';
 import ButtonCustom from '@/components/common/ButtonCustom';
 import HeaderView from '@/components/common/HeaderView';
-import { COLOR_APP, key_assets } from '@/constants/constants';
+import { key_assets } from '@/constants/constants';
 import { getCategories } from '@/services/Api/get.services';
 import { useListStore, useUserStore } from '@/store/main.store';
 import { RootStackScreenProps } from '@/types/navigation.types';
@@ -9,6 +10,7 @@ import { PopupRef } from '@/types/view.types';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { Colors, Spacing } from '../../constants/theme';
 import ItemInvest from './items/ItemInvest';
 import PopupFormInvest from './popups/PopupFormInvest';
 import { DataInvestItem } from './types/Investment.types';
@@ -54,7 +56,7 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
     }, [])
 
     useEffect(() => {
-        
+
     }, [listInvest])
 
     useEffect(() => {
@@ -66,7 +68,7 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
 
     const getList = async () => {
         try {
-            const dataBody = {asset_id: infoAsset?.invest?.id, type: key_assets.invest}
+            const dataBody = { asset_id: infoAsset?.invest?.id, type: key_assets.invest }
             const jsonData = await getCategories(dataBody, uid);
             if (jsonData.success && jsonData.data) {
                 setListInvest(jsonData.data as DataInvestItem[]);
@@ -92,25 +94,39 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
 
     const renderHeader = () => {
         return (
-            <View>
-                <View style={styles.box_overview}>
+            <View style={styles.headerContent}>
+                {/* Overview Cards */}
+                <View style={styles.overviewContainer}>
                     {
                         dataInvest.map((item, index) => {
-                            return <BoxMoney
-                                style_box={{ backgroundColor: item.id == '2' ? COLOR_APP.blue : '#fff' }}
-                                style={{ flex: 1 }} data={item}
-                                style_txt={item.id === '2' && { color: '#fff' }}
-                                key={index} />
+                            const isCurrentValue = item.id === '2';
+                            return (
+                                <BoxMoney
+                                    style_box={{
+                                        backgroundColor: isCurrentValue ? Colors.primary : Colors.surface,
+                                        marginLeft: isCurrentValue ? Spacing.md : 0
+                                    }}
+                                    style={{ flex: 1 }}
+                                    data={item}
+                                    variant={isCurrentValue ? 'primary' : 'default'}
+                                    key={index}
+                                />
+                            )
                         })
                     }
                 </View>
-                <ButtonCustom
-                    title='Tạo khoản đầu tư'
-                    style_btn={styles.style_btn}
-                    onPress={onPressCreate}
-                    Icon={Ionicons}
-                    name_icon={'create'}
-                />
+
+                {/* Create Button */}
+                <View style={styles.buttonContainer}>
+                    <ButtonCustom
+                        title='Tạo khoản đầu tư'
+                        onPress={onPressCreate}
+                        Icon={Ionicons}
+                        name_icon='add-circle-outline'
+                        variant='primary'
+                        style_btn={styles.createButton}
+                    />
+                </View>
             </View>
         )
     }
@@ -124,7 +140,7 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
 
     const renderItem = ({ item, index }: InvestType) => {
         return (
-            <View key={item.id} style={{ marginHorizontal: 10, marginVertical: 5 }}>
+            <View key={item.id} style={styles.itemContainer}>
                 <ItemInvest data={item} onPress={onPressItem} />
             </View>
         )
@@ -137,14 +153,16 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}>
-            <View style={styles.conatiner}>
-                <HeaderView onBack={onBack} title={'Khoản đầu tư'} />
+            style={styles.container}
+        >
+            <View style={styles.container}>
+                <HeaderView onBack={onBack} title={'Đầu tư'} />
                 <FlatList
                     ListHeaderComponent={renderHeader}
                     data={listInvest}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor_}
+                    contentContainerStyle={styles.listContent}
                 />
                 <PopupFormInvest ref={PopupFormRef} onSuccess={onCreateSuccess} />
             </View>
@@ -153,16 +171,30 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
 }
 
 const styles = StyleSheet.create({
-    conatiner: {
-        flex: 1
+    container: {
+        flex: 1,
+        backgroundColor: Colors.background,
     },
-    box_overview: {
+    headerContent: {
+        paddingTop: Spacing.md,
+    },
+    overviewContainer: {
         flexDirection: 'row',
-        marginHorizontal: 5,
-        marginTop: 10
+        paddingHorizontal: Spacing.sm,
+        marginBottom: Spacing.base,
     },
-    style_btn: {
-        marginHorizontal: 10,
-        marginVertical: 5
-    }
+    buttonContainer: {
+        paddingHorizontal: Spacing.base,
+        marginBottom: Spacing.base,
+    },
+    createButton: {
+        width: '100%',
+    },
+    itemContainer: {
+        marginHorizontal: Spacing.base,
+        marginVertical: Spacing.sm,
+    },
+    listContent: {
+        paddingBottom: 100,
+    },
 })

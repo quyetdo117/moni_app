@@ -1,7 +1,8 @@
+
 import ButtonCustom from '@/components/common/ButtonCustom';
 import EmptyView from '@/components/common/EmptyView';
 import HeaderView from '@/components/common/HeaderView';
-import { COLOR_APP, key_assets } from '@/constants/constants';
+import { key_assets } from '@/constants/constants';
 import { getCategories } from '@/services/Api/get.services';
 import { useListStore, useUserStore } from '@/store/main.store';
 import { RootStackScreenProps } from '@/types/navigation.types';
@@ -12,6 +13,7 @@ import { commonStyles } from '@/utils/styles_shadow';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 import ItemSave from './items/ItemSave';
 import PopupFormSave from './popups/PopupFormSave';
 
@@ -91,6 +93,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
   const renderHeader = useMemo(() => {
     return (
       <View style={styles.headerContainer}>
+        {/* Summary Card */}
         <View style={[styles.summaryCard, commonStyles.box_shadow]}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
@@ -98,7 +101,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
               <Text style={styles.summaryValue}>{formatSmartMoney(totalSaved)}</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryLabel, styles.savedValue]}>{'Số tiền đã tiết kiệm'}</Text>
+              <Text style={[styles.summaryLabel, styles.savedLabel]}>{'Số tiền đã tiết kiệm'}</Text>
               <Text style={[styles.summaryValue, styles.savedValue]}>{formatSmartMoney(totalWithInterest)}</Text>
             </View>
           </View>
@@ -107,23 +110,27 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
               <Text style={styles.interestValue}>+{formatSmartMoney(totalWithInterest - totalSaved)}</Text>
             </View>
         </View>
+
+        {/* Create Button */}
         <ButtonCustom
           title='Tạo khoản tiết kiệm'
           onPress={onShow}
-          style_btn={styles.createButton}
+          variant='primary'
           Icon={FontAwesome6}
-          name_icon={'plus'}
+          name_icon='plus'
+          style_btn={styles.createButton}
         />
 
+        {/* Section Title */}
         <Text style={styles.sectionTitle}>{'Danh sách tiết kiệm'}</Text>
       </View>
     );
   }, [totalSaved, totalWithInterest]);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <View style={[styles.container]}>
-        <HeaderView onBack={onBack} title='Tài khoản tiết kiệm' />
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+      <View style={styles.container}>
+        <HeaderView onBack={onBack} title='Tiết kiệm' />
         <FlatList
           ListHeaderComponent={renderHeader}
           renderItem={renderItem}
@@ -143,28 +150,18 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.background,
   },
   headerContainer: {
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-    marginTop: 20
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.base,
+    paddingTop: Spacing.md,
   },
   summaryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.base,
+    marginBottom: Spacing.base,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -174,56 +171,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
   },
   summaryValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text,
+  },
+  savedLabel: {
+    textAlign: 'right',
   },
   savedValue: {
-    color: COLOR_APP.green,
+    color: Colors.success,
     textAlign: 'right',
   },
   interestRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: Colors.divider,
   },
   interestLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
   },
   interestValue: {
-    fontSize: 12,
-    color: COLOR_APP.green,
-    fontWeight: '600',
-    marginLeft: 4,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.success,
+    fontWeight: Typography.fontWeight.semiBold,
+    marginLeft: Spacing.xs,
   },
   createButton: {
-    backgroundColor: COLOR_APP.blue,
-    marginBottom: 10
+    marginBottom: Spacing.base,
   },
   createButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semiBold,
+    marginLeft: Spacing.sm,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semiBold,
+    color: Colors.text,
   },
   listContent: {
     paddingBottom: 100,
   },
   separator: {
-    height: 10,
+    height: Spacing.sm,
   },
 });

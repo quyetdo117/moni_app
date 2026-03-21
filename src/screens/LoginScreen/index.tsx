@@ -1,12 +1,12 @@
+
 import ButtonAnimated from '@/components/common/ButtonAnimated';
-import { COLOR_APP } from '@/constants/constants';
 import { loginUser, registerUser } from '@/services/Api/auth.services';
 import { useUserStore } from '@/store/main.store';
-import { line_min } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 import BoxLogin from './Boxs/BoxLogin';
 import BoxRegister from './Boxs/BoxRegister';
 import { BoxRef, LoginForm, RegisterForm } from './LoginScreen.types';
@@ -40,56 +40,92 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       <View style={styles.content}>
-        <Text style={styles.title}>{isLogin ? 'Đăng Nhập' : 'Đăng Ký'}</Text>
-        {
-          isLogin ? <BoxLogin ref={loginBox} /> : <BoxRegister ref={registerBox} />
-        }
-        <ButtonAnimated
-          onPress={onPressButton}
-          style={[styles.btn, commonStyles.box_shadow]}
-          style_txt={{ fontWeight: '600' }}
-          title={isLogin ? 'Đăng Nhập' : 'Đăng Ký'}
-        />
-        <RNBounceable>
-          <Text style={styles.txt_more} onPress={onChangeOption}>{isLogin ? 'Tạo tài khoản' : 'Đăng Nhập'}</Text>
-        </RNBounceable>
+        {/* Logo/Brand Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.appName}>MoniSocial</Text>
+          <Text style={styles.tagline}>Quản lý tài chính thông minh</Text>
+        </View>
+
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Text style={styles.title}>{isLogin ? 'Đăng Nhập' : 'Đăng Ký'}</Text>
+          <View style={styles.formContainer}>
+            {isLogin ? <BoxLogin ref={loginBox} /> : <BoxRegister ref={registerBox} />}
+          </View>
+          
+          <ButtonAnimated
+            onPress={onPressButton}
+            style={[styles.btn, commonStyles.box_shadow]}
+            style_txt={{ fontWeight: Typography.fontWeight.semiBold }}
+            title={isLogin ? 'Đăng Nhập' : 'Đăng Ký'}
+          />
+          <RNBounceable>
+            <Text style={styles.txt_more} onPress={onChangeOption}>
+              {isLogin ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Đăng nhập'}
+            </Text>
+          </RNBounceable>
+        </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLOR_APP.blue,
     flex: 1,
-    justifyContent: 'center'
+    backgroundColor: Colors.background,
   },
   content: {
-
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: Spacing['3xl'],
+  },
+  appName: {
+    fontSize: Typography.fontSize['4xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+    marginBottom: Spacing.sm,
+  },
+  tagline: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+  },
+  formSection: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...StyleSheet.flatten(commonStyles.box_shadow),
   },
   title: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text,
     textAlign: 'center',
-    marginBottom: 30
+    marginBottom: Spacing.lg,
+  },
+  formContainer: {
+    marginBottom: Spacing.base,
   },
   btn: {
-    backgroundColor: COLOR_APP.blue,
-    borderWidth: line_min,
-    borderColor: '#fff',
-    marginHorizontal: 20,
-    marginTop: 20
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.base,
+    marginTop: Spacing.sm,
   },
   txt_more: {
-    color: '#fff',
-    fontSize: 12,
+    color: Colors.accent,
+    fontSize: Typography.fontSize.sm,
     textAlign: 'center',
-    textDecorationLine: 'underline',
-    fontWeight: '600',
-    marginTop: 10,
-    padding: 5
+    fontWeight: Typography.fontWeight.medium,
+    marginTop: Spacing.base,
+    padding: Spacing.sm,
   }
 })

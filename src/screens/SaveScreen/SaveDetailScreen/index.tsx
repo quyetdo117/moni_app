@@ -5,7 +5,7 @@ import HeaderView from '@/components/common/HeaderView';
 import ItemSavePayment from '@/components/items/ItemSavePayment';
 import { PopupConfirm } from '@/components/popups/PopupConfirm';
 import { PopupToast } from '@/components/popups/PopupToast';
-import { COLOR_APP, Colors, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
+import { COLOR_APP, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
 import { getListTransaction } from '@/services/Api/get.services';
 import { deleteCategory, deleteTransaction } from '@/services/Api/transaction.services';
 import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
@@ -16,6 +16,7 @@ import { formatSmartMoney } from '@/utils/convertData';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { Colors } from '../../../constants/theme';
 import PopupEditSaveCategory from '../popups/PopupEditSaveCategory';
 import PopupEditSaveTransaction from '../popups/PopupEditSaveTransaction';
 import PopupFormSave from '../popups/PopupFormSave';
@@ -84,7 +85,7 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
                 title: 'Bạn có chắc chắn muốn xóa danh mục này?',
                 data: saveData,
                 onConfirm: confirmDeleteCategory,
-                onCancel: () => {}
+                onCancel: () => { }
             });
         }
     };
@@ -103,18 +104,18 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
                     const currentTotalMarket = infoAsset['save'].total_market || 0;
                     const newTotalSave = currentTotalSave - (data.total_value || 0);
                     const newTotalMarket = currentTotalMarket - (data.total_market || 0);
-                    
+
                     const updatedAsset = {
                         ...infoAsset['save'],
                         total_value: newTotalSave,
                         total_market: newTotalMarket || 0
                     };
-                    
+
                     const updatedAssetExpense = {
                         ...infoAsset['expense'],
                         total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_value || 0)
                     };
-                    
+
                     setInfoAsset([updatedAsset as any, updatedAssetExpense as any]);
                 }
 
@@ -123,7 +124,7 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
                     type: 'success',
                     duration: 2000
                 });
-                
+
                 // Navigate back
                 navigation?.goBack();
             } else {
@@ -154,7 +155,7 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
     const onEditCategorySuccess = (updatedData: SaveDetailData) => {
         setSaveData(updatedData);
-        
+
         // Update list
         const updatedListSave = listSave.map(item =>
             item.id === updatedData.id ? { ...item, ...updatedData } as any : item
@@ -342,23 +343,23 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
     const renderActionButtons = () => {
         return (
             <View style={styles.actionButtonsContainer}>
-                <ButtonCustom 
-                    title="Thêm giao dịch" 
+                <ButtonCustom
+                    title="Thêm giao dịch"
                     onPress={onCreateTransaction}
                     style_btn={styles.addButton}
                     style_txt={styles.addButtonText}
                 />
-                
+
                 <View style={styles.secondaryButtonsRow}>
-                    <ButtonCustom 
-                        title="Sửa" 
+                    <ButtonCustom
+                        title="Sửa"
                         onPress={onEditCategory}
                         style_btn={styles.editButton}
                         style_txt={styles.editButtonText}
                     />
-                    
-                    <ButtonCustom 
-                        title="Xóa" 
+
+                    <ButtonCustom
+                        title="Xóa"
                         onPress={onDeleteCategory}
                         style_btn={styles.deleteButton}
                         style_txt={styles.deleteButtonText}
@@ -418,9 +419,9 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
                         </View>
                     )}
                 </View>
-                
+
                 {renderActionButtons()}
-                
+
                 <View style={styles.sectionHeader}>
                     <View style={styles.sectionIcon} />
                     <Text style={styles.txt_title}>{'Lịch sử tiết kiệm'}</Text>
