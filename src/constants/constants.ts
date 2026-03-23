@@ -73,24 +73,24 @@ export const COLOR_APP = {
     primary: Colors.primary,
     primaryLight: Colors.primaryLight,
     secondary: Colors.secondary,
-    
+
     // Semantic colors
     blue: Colors.accent,
     green: Colors.success,
     yellow: Colors.warning,
     red: Colors.error,
     gray: Colors.textSecondary,
-    
+
     // Background colors
     background: Colors.background,
     surface: Colors.surface,
     surfaceElevated: Colors.surfaceElevated,
-    
+
     // Text colors
     text: Colors.text,
     textSecondary: Colors.textSecondary,
     textTertiary: Colors.textTertiary,
-    
+
     // Border
     border: Colors.border,
     divider: Colors.divider,
@@ -155,3 +155,4 @@ export const types_display = {
     invest: 7,
     save: 8
 }
+

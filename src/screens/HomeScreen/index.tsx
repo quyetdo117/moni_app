@@ -3,6 +3,7 @@ import Avatar from '@/components/common/Avatar';
 import BoxMoney from '@/components/common/BoxMoney';
 import VirtualButton from '@/components/common/VirtualButton';
 import { key_assets } from '@/constants/constants';
+import { useBottomInsets } from '@/hooks/useBottomInsets';
 import { getInfoUser } from '@/services/Api/get.services';
 import { useUserStore } from '@/store/main.store';
 import { InfoUser } from '@/types/info.types';
@@ -17,6 +18,7 @@ import RecentBox from './RecentBox';
 
 export default function HomeScreen({ navigation, route }: MainTabScreenProps<'Home'>) {
   const insets = useSafeAreaInsets();
+  const { insets_padding } = useBottomInsets();
   const setInfoUser = useUserStore(state => state.setInfoUser);
   const setInfoAsset = useUserStore(state => state.setInfoAsset);
   const uid = useUserStore(state => state.uid);
@@ -55,7 +57,10 @@ export default function HomeScreen({ navigation, route }: MainTabScreenProps<'Ho
       <ScrollView
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.content, { paddingTop: insets.top + Spacing.base }]}>
+        <View style={[styles.content, {
+          paddingTop: insets.top + Spacing.base,
+          paddingBottom: insets_padding
+        }]}>
           {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -162,7 +167,7 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   box_info: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
     borderBottomLeftRadius: BorderRadius.lg,
     borderTopLeftRadius: BorderRadius.lg,
     paddingVertical: Spacing.md,
