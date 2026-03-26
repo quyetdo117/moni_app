@@ -4,12 +4,12 @@ export interface User {
     id: string,
     uid: string;
     name: string;
+    balance: number;
 }
 
 export interface Asset {
     id: string;
     name: string;
-    total_value: number;
     type: type_asset;
     user_id: string
 }
@@ -19,14 +19,16 @@ export interface Category {
     asset_id: string;
     name: string;
     total_value: number;
-    total_market?: number;
-    market_value?: number;
+    total_capital?: number; // gia von
+    market_value?: number; // don gia thi truong
+    status: string;
     target_value?: number;
     quantity?: number;
     type: number;
     type_display: number;
     user_id: string;
-    date_update: number;
+    date_update?: number;
+    date_buy: number;
 }
 
 export interface Transaction {
@@ -36,7 +38,7 @@ export interface Transaction {
     type: number;
     name: string;
     quantity?: number;
-    rate_value?: number;
+    rate_value?: number; // don gia mua
     total_value: number;
     date_buy: number;
     note: string;

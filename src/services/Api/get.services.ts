@@ -1,28 +1,20 @@
 import { db } from "@/configs/firebaseConfig";
 import { key_assets, tables_name, TYPE_TRANSACTION } from "@/constants/constants";
-import { InfoAsset } from "@/types/info.types";
-import { Asset, Category, Transaction } from "@/types/schema.types";
+import { Asset, Category } from "@/types/schema.types";
 import { collection, doc, getAggregateFromServer, getDoc, getDocs, limit, orderBy, query, QueryConstraint, sum, where } from "firebase/firestore";
-import { getDocumentRef, getTableRef } from "./base.services";
+import { getTableRef } from "./base.services";
 
 /// Lay danh sach Categories
 
 export const getCategories = async ({ asset_id, type }: { asset_id?: string, type: string }, uid?: string) => {
     try {
-        let assetData: Asset | null = null;
-
-        // Nếu không có asset_id thì mới lấy từ getAssetForType
         if (!asset_id) {
-            if (!uid) throw new Error("Thieu uid");
-            assetData = await getAssetForType(type, uid);
-            if (!assetData) throw new Error("Khong tim thay Asset!");
+            throw new Error("Khong tim thay Asset id!");
         }
 
         const categoriesRef = collection(db, tables_name.CATEGORY);
-        const targetAssetId = asset_id || assetData?.id;
-        if (!targetAssetId) throw new Error("Khong tim thay Asset!");
 
-        const constraints: QueryConstraint[] = [where('asset_id', '==', targetAssetId)];
+        const constraints: QueryConstraint[] = [where('asset_id', '==', asset_id)];
         if (type == key_assets.expense) {
             constraints.push(orderBy('type_display', 'asc'))
         }
@@ -32,9 +24,7 @@ export const getCategories = async ({ asset_id, type }: { asset_id?: string, typ
         const querySnap = await getDocs(q);
         const data = querySnap.docs.map((item, index) => {
             const dataCategory = item.data() as Category;
-            const total_market = Number(dataCategory.market_value || 0) * Number(dataCategory.quantity || 0);
             return {
-                total_market,
                 ...dataCategory
             }
         })
@@ -70,31 +60,11 @@ export const getAssetForType = async (type: string, uid: string) => {
 export const getListTransaction = async (uid: string, asset_id?: string, category_id?: string, category_type?: number) => {
     try {
         const transactonsRef = getTableRef(tables_name.TRANSACTION);
-        const objectCategories: Record<string, number> = {};
         const constraints = [];
 
-
         // Nếu có asset_id thì sử dụng trực tiếp
-        let dataAsset;
         if (asset_id) {
             constraints.push(where('asset_id', '==', asset_id));
-            const assetRef = getDocumentRef(tables_name.ASSET, asset_id);
-            const snapAsset = await getDoc(assetRef);
-            if (!snapAsset.exists()) throw Error('Khong tim thay Asset');
-            dataAsset = snapAsset.data() as Asset;
-        } else {
-            dataAsset = await getAssetForType(key_assets.expense, uid);
-        }
-        if (dataAsset?.type == key_assets.expense) {
-            const jsonCategories = await getCategories({ asset_id: asset_id, type: key_assets.expense }, uid);
-            if (jsonCategories.success) {
-                const categories = jsonCategories.data || [];
-                categories.forEach(item => {
-                    objectCategories[item.id] = Number(item.type_display || 0);
-                });
-            } else {
-                throw new Error("Khong lay duoc Categories!");
-            }
         }
         if (category_id) {
             constraints.push(where('category_id', '==', category_id))
@@ -110,9 +80,7 @@ export const getListTransaction = async (uid: string, asset_id?: string, categor
         const data = querySnap.docs.map((doc) => {
             const rawData = doc.data();
             return {
-                ...rawData,
-                // Gán thông tin phụ trợ, mặc định là 0 nếu không tìm thấy
-                type_display: Number(objectCategories[rawData.category_id] || 0)
+                ...rawData
             };
         });
         return { success: true, data, msg: 'done' };
@@ -143,46 +111,33 @@ export const getInfoUser = async (id: string) => {
         }
 
         const dataUser = userSnap.data();
-        
+
         // Lấy danh sách asset
         const assets = assetSnap.docs.map((item) => item.data() as Asset);
-        
-        // Tạo map để lưu total_market cho từng asset
-        const assetMarketValues: Record<string, number> = {};
-        
-        // Lấy asset invest và save
-        const assetInvest = assets.find(a => a.type === key_assets.invest);
-        const assetSave = assets.find(a => a.type === key_assets.save);
-        
-        // Tính total_market cho invest nếu có
-        if (assetInvest) {
-            const categoriesRef = collection(db, tables_name.CATEGORY);
-            const qInvest = query(categoriesRef, where('asset_id', '==', assetInvest.id));
-            const totalAggInvest = await getAggregateFromServer(qInvest, {
-                total_market: sum('total_market')
-            });
-            assetMarketValues[assetInvest.id] = totalAggInvest.data().total_market || 0;
-        }
-        
-        // Tính total_market cho save nếu có
-        if (assetSave) {
-            const categoriesRef = collection(db, tables_name.CATEGORY);
-            const qSave = query(categoriesRef, where('asset_id', '==', assetSave.id));
-            const totalAggSave = await getAggregateFromServer(qSave, {
-                total_market: sum('total_market')
-            });
-            assetMarketValues[assetSave.id] = totalAggSave.data().total_market || 0;
-        }
 
-        // Map assets với total_market đã tính
-        const dataAssets = assets.map((itemData) => {
-            const dataAsset = {
-                ...itemData,
-                total_market: assetMarketValues[itemData.id] || 0
-            } as InfoAsset;
-            
-            return dataAsset;
-        });
+        const dataAssets = await Promise.all(assets.map(async item => {
+            if (item.type === key_assets.expense) {
+                return {
+                    ...item,
+                    total_value: dataUser.balance || 0
+                };
+            } else {
+                const categoriesRef = collection(db, tables_name.CATEGORY);
+                const q = query(categoriesRef, where('asset_id', '==', item.id));
+
+                // Gọi Aggregate
+                const totalAgg = await getAggregateFromServer(q, {
+                    total_value: sum('total_value'),
+                    total_capital: sum('total_capital')
+                });
+
+                return {
+                    ...item,
+                    total_value: totalAgg.data().total_value || 0,
+                    total_capital: totalAgg.data().total_capital || 0
+                };
+            }
+        }));
 
         const infoUser = {
             ...dataUser,
@@ -203,50 +158,42 @@ export const getInfoUser = async (id: string) => {
 export const getInfoExpense = async (id?: string) => {
     try {
         if (!id) throw new Error('Khong lay duoc asset id')
-        const transactionsRef = collection(db, tables_name.TRANSACTION);
-        const assetRef = getDocumentRef(tables_name.ASSET, id)
-        const q = query(transactionsRef,
-            where('asset_id', '==', id)
+        const categoryRef = collection(db, tables_name.CATEGORY);
+        const q = query(categoryRef,
+            where('asset_id', '==', id),
+            orderBy('type_display', 'asc')
         );
 
-        const [querySnap, categories, assetSnap] = await Promise.all([
-            getDocs(q),
-            getCategories({ asset_id: id, type: key_assets.expense }),
-            getDoc(assetRef)
-        ]);
-        if (!categories.success) {
-            throw new Error('Lay danh muc that bai!')
-        }
-        if (!assetSnap.exists()) {
+        const categoriesSnap = await getDocs(q);
+
+        if (categoriesSnap.empty) {
             throw new Error('Asset khong ton tai')
         }
-
-        const assetData = assetSnap.data() as Asset;
-
-        const total_money = assetData ? assetData.total_value : 0;
-
         let total_income = 0;
         let total_expense = 0;
-        querySnap.docs.forEach((item) => {
-            const dataItem = item.data() as Transaction;
-            const total_value = Number(dataItem.total_value);
 
+        const dataCategories = categoriesSnap.docs.map((item) => {
+            const dataItem = item.data() as Category;
+            const total_value = Number(dataItem.total_value);
             if (dataItem.type == TYPE_TRANSACTION.IN) {
                 total_income += total_value;
             } else if (dataItem.type == TYPE_TRANSACTION.OUT) {
                 total_expense += total_value;
             }
-        })
-        const dataCatagories = categories.data;
+            return {
+                ...dataItem
+            }
+        });
         return {
             success: true,
             data: {
-                total_income, total_expense, total_money,
-                categories: dataCatagories
+                total_income, total_expense,
+                categories: dataCategories
             },
             msg: 'Done'
         }
     } catch (error: any) {
+        console.log('logg error', error)
         return { success: false, msg: error.message || 'Co loi xay ra' }
     }
 }

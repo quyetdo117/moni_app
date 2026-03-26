@@ -91,20 +91,20 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
 
                 // Update infoAsset
                 if (infoAsset?.['invest']) {
-                    const currentTotalInvest = infoAsset['invest'].total_value || 0;
-                    const currentTotalMarket = infoAsset['invest'].total_market || 0;
-                    const newTotalInvest = currentTotalInvest - (data.total_value || 0);
-                    const newTotalMarket = currentTotalMarket - (data.total_market || 0);
+                    const currentTotalInvest = infoAsset['invest'].total_capital || 0;
+                    const currentTotalMarket = infoAsset['invest'].total_value || 0;
+                    const newTotalInvest = currentTotalInvest - (data.total_capital || 0);
+                    const newTotalMarket = currentTotalMarket - (data.total_value || 0);
 
                     const updatedAsset = {
                         ...infoAsset['invest'],
-                        total_value: newTotalInvest,
-                        total_market: newTotalMarket
+                        total_capital: newTotalInvest,
+                        total_value: newTotalMarket
                     } as InfoAsset;
 
                     const updatedAssetExpense = {
                         ...infoAsset['expense'],
-                        total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_value || 0)
+                        total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_capital || 0)
                     } as InfoAsset;
 
                     setInfoAsset([updatedAsset, updatedAssetExpense]);
@@ -140,8 +140,32 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
         }
     }
 
-    const onCreateTransactionSuccess = () => {
-        onGetData();
+    const onCreateTransactionSuccess = (data: any) => {
+        // Cập nhật dữ liệu từ kết quả trả về khi tạo giao dịch thành công
+        if (data) {
+            // Cập nhật danh sách giao dịch
+            if (data.transaction) {
+                const newTransaction = data.transaction;
+                const isAdd = newTransaction.type === TYPE_TRANSACTION.IN;
+                const valueChange = isAdd ? Number(newTransaction.total_value) : -Number(newTransaction.total_value);
+                const quantityChange = isAdd ? Number(newTransaction.quantity || 0) : -Number(newTransaction.quantity || 0);
+                const market_value = data.market_value;
+                const newDataList = [newTransaction, ...dataList];
+                updateInvestmentData(newDataList, valueChange, quantityChange, market_value);
+
+                // Cập nhật infoAsset
+                if (infoAsset?.['invest']) {
+                    const currentTotalCapital = infoAsset['invest'].total_capital || 0;
+                    const currentTotalValue = infoAsset['invest'].total_value || 0;
+                    const newCapital = currentTotalCapital + valueChange;
+                    const newTotal = currentTotalValue + (investmentData.market_value || 0) * quantityChange;
+                    updateInfoUserStore(newCapital, newTotal, valueChange);
+                }
+            }
+        } else {
+            // Fallback: lấy lại dữ liệu nếu không có dữ liệu trả về
+            onGetData();
+        }
     }
 
     const onEditCategorySuccess = (updatedData: DataInvestItem) => {
@@ -163,7 +187,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     const keyExtractor_ = (item: InfoTransaction, index: number) => index.toString();
 
     // Hàm cập nhật infoUser trong store sau khi có thay đổi investment
-    const updateInfoUserStore = (newTotalInvest: number, newTotalMarket: number, valueChange: number) => {
+    const updateInfoUserStore = (newTotalCapital: number, newTotalValue: number, valueChange: number) => {
         if (!infoAsset) return;
 
         const currentInvestAsset = infoAsset['invest'];
@@ -173,8 +197,8 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
         // Cập nhật asset thành công mới
         const updatedAsset = {
             ...currentInvestAsset,
-            total_value: newTotalInvest,
-            total_market: newTotalMarket
+            total_value: newTotalValue,
+            total_capital: newTotalCapital
         };
 
         const updatedAssetExpense = {
@@ -190,21 +214,24 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     const updateInvestmentData = (
         dataListChange: InfoTransaction[],
         valueChange: number,
-        quantityChange: number
+        quantityChange: number,
+        new_market_value?: number
     ) => {
         setDataList(dataListChange);
 
         // Update investmentData locally
-        const { quantity, total_value, market_value } = investmentData;
+        const { quantity, total_capital, market_value } = investmentData;
+        const market_value_ = new_market_value || market_value
         const newQuantity = (quantity || 0) + quantityChange;
-        const newTotalValue = (total_value || 0) + valueChange;
-        const total_market = newQuantity * (market_value || 0);
+        const newTotalCapital = (total_capital || 0) + valueChange;
+        const newTotalValue = newQuantity * (market_value_ || 0);
 
         const newData = {
             ...investmentData,
             total_value: newTotalValue,
             quantity: newQuantity,
-            total_market: total_market
+            total_capital: newTotalCapital,
+            market_value: market_value_
         };
 
         setInvestmentData(newData);
@@ -230,7 +257,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
 
     const confirmDelete = async (transactionData: InfoTransaction) => {
         try {
-            const jsonData = await deleteTransaction(transactionData.id);
+            const jsonData = await deleteTransaction(transactionData.id, key_assets.invest);
             if (jsonData.success) {
                 const isAdd = transactionData.type === TYPE_TRANSACTION.IN;
                 const valueDelete = isAdd ? -transactionData.total_value : transactionData.total_value;
@@ -241,11 +268,11 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
 
                 // Update infoAsset['invest'] in store
                 if (infoAsset['invest']) {
-                    const currentTotalInvest = infoAsset['invest'].total_value || 0;
-                    const currentTotalMarket = infoAsset['invest'].total_market || 0;
-                    const newTotalInvest = currentTotalInvest + valueDelete;
-                    const newTotalMarket = currentTotalMarket + (investmentData.market_value || 0) * quantityDelete;
-                    updateInfoUserStore(newTotalInvest, newTotalMarket, valueDelete);
+                    const currentTotalCapital = infoAsset['invest'].total_capital || 0;
+                    const currentTotalValue = infoAsset['invest'].total_value || 0;
+                    const newCapital = currentTotalCapital + valueDelete;
+                    const newTotal = currentTotalValue + (investmentData.market_value || 0) * quantityDelete;
+                    updateInfoUserStore(newCapital, newTotal, valueDelete);
                 }
 
                 // Update chart
@@ -297,11 +324,11 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
 
         // Update infoAsset['invest'] in store
         if (infoAsset['invest']) {
-            const currentTotalInvest = infoAsset['invest'].total_value || 0;
-            const currentTotalMarket = infoAsset['invest'].total_market || 0;
-            const newTotalInvest = currentTotalInvest + valueChange;
-            const newTotalMarket = currentTotalMarket + (investmentData.market_value || 0) * quantityChange;
-            updateInfoUserStore(newTotalInvest, newTotalMarket, valueChange);
+            const currentTotal = infoAsset['invest'].total_value || 0;
+            const currentCapital = infoAsset['invest'].total_capital || 0;
+            const newCapital = currentCapital + valueChange;
+            const newTotal = currentTotal + (investmentData.market_value || 0) * quantityChange;
+            updateInfoUserStore(newCapital, newTotal, valueChange);
         }
 
         // Update chart
@@ -324,9 +351,9 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
         )
     }
 
-    const roi_value = calculateROI(investmentData.total_value || 0, investmentData.total_market || 0);
-    const dateTimestamp = investmentData.createdAt;
-    const dateStr = dateTimestamp ? moment.unix(dateTimestamp).format('DD/MM/YYYY') : '';
+    const roi_value = calculateROI(investmentData.total_capital || 0, investmentData.total_value || 0);
+    const dateTimestamp = investmentData.date_buy;
+    const dateStr = dateTimestamp ? moment.unix(dateTimestamp).format('DD/MM/YYYY') : '--/--/----';
 
     // Render action buttons row
     const renderActionButtons = () => {
@@ -361,6 +388,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     const renderHeader = () => {
         const roiColor = roi_value >= 0 ? COLOR_APP.green : COLOR_APP.red;
         const roiBgColor = roi_value >= 0 ? '#e8f5e9' : '#ffebee';
+        console.log('logg investmentData', investmentData)
 
         return (
             <View style={styles.container_header}>
@@ -380,13 +408,13 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
                         <View style={styles.colHighlight}>
                             <Text style={styles.label}>{'Tổng vốn'}</Text>
                             <Text style={[styles.valueSmall, { color: COLOR_APP.green }]}>
-                                {formatSmartMoney(investmentData.total_value || 0)}
+                                {formatSmartMoney(investmentData.total_capital || 0)}
                             </Text>
                         </View>
                         <View style={styles.colHighlight}>
                             <Text style={styles.label}>{'Giá trị hiện tại'}</Text>
                             <Text style={[styles.valueSmall, { color: COLOR_APP.blue }]}>
-                                {formatSmartMoney(investmentData.total_market || 0)}
+                                {formatSmartMoney(investmentData.total_value || 0)}
                             </Text>
                         </View>
                     </View>
@@ -408,7 +436,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
                         <View style={styles.col}>
                             <Text style={styles.label}>{'Lãi/Lỗ'}</Text>
                             <Text style={[styles.valueSmall, { color: roiColor }]}>
-                                {formatSmartMoney((investmentData.total_market || 0) - (investmentData.total_value || 0))}
+                                {formatSmartMoney((investmentData.total_value || 0) - (investmentData.total_capital || 0))}
                             </Text>
                         </View>
                         <View style={styles.col}>
@@ -437,7 +465,7 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
                 <HeaderView
                     isCenter={true}
                     onBack={onBack}
-                    style_txt={{fontSize: 20}}
+                    style_txt={{ fontSize: 20 }}
                     title={'Chi tiết khoản đầu tư'} />
                 <FlatList
                     ListHeaderComponent={renderHeader}

@@ -9,7 +9,8 @@ export interface InfoTransaction extends Transaction {
 }
 
 export interface InfoAsset extends Asset {
-  total_market: number;
+  total_capital: number;
+  total_value: number;
   stt?: number;
 }
 

@@ -1,5 +1,4 @@
-import { TYPE_TRANSACTION } from '@/constants/constants';
-import { type_asset } from '@/types/schema.types';
+import { colors_chart, TYPE_TRANSACTION } from '@/constants/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -63,7 +62,7 @@ export const useChartStore = create<ChartStore>()(
                 // Determine which chart to update
                 let targetChart: 'in' | 'out';
 
-                if (type_ === 'expense') {
+                if (type_ === 'expense' || type_ === 'income') {
                     // expense: IN -> 'in', OUT -> 'out'
                     targetChart = data.type === TYPE_TRANSACTION.IN ? 'in' : 'out';
                 } else {
@@ -90,7 +89,8 @@ export const useChartStore = create<ChartStore>()(
                 const setChartData = targetChart === 'in' ? get().setPieDataIn : get().setPieDataOut;
 
                 // Map type_ to title
-                const titleMap: Record<type_asset, string> = {
+                const titleMap: Record<string, string> = {
+                    'income': 'Thu nhập',
                     'expense': 'Chi tiêu',
                     'invest': 'Đầu tư',
                     'save': 'Tiết kiệm'
@@ -104,10 +104,11 @@ export const useChartStore = create<ChartStore>()(
                 if (existingIndex >= 0) {
                     newData[existingIndex].value = Math.max(0, newData[existingIndex].value + valueChange);
                 } else if (valueChange > 0) {
-                    const COLORS: Record<type_asset, string> = {
-                        'expense': '#FF8383',
-                        'save': '#54A0FF',
-                        'invest': '#A29BFE'
+                    const COLORS: Record<string, string> = {
+                        'income': colors_chart.income,
+                        'expense': colors_chart.expense,
+                        'save': colors_chart.save,
+                        'invest': colors_chart.income
                     };
                     newData.push({ value: absValue, color: COLORS[type_] || '#999', title, type: type_ });
                 }

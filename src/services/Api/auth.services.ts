@@ -19,6 +19,7 @@ const createInitData = async <T extends RegisterForm>(uid: string, data: T) => {
         id: uid,
         uid: uid,
         email: email,
+        balance: 0,
         name: name,
         createdAt: timestamp
     });

@@ -1,4 +1,4 @@
-import { key_assets } from '@/constants/constants';
+import { colors_chart, key_assets } from '@/constants/constants';
 import { getPieChartData, PieChartData } from '@/services/Api/get.services';
 import { useChartStore, useUserStore } from '@/store/main.store';
 import { ChartDataItemStore } from '@/store/store.types';
@@ -12,20 +12,12 @@ import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme
 const width = Dimensions.get('window').width;
 const WIDTH_CHART = (width - 240) / 2;
 
-// Modern Minimalist Color Palette
-const COLORS = {
-    income: '#10B981',     // Success green
-    expense: '#EF4444',   // Error red
-    invest: '#8B5CF6',    // Purple
-    save: '#3B82F6',      // Blue
-    inCircle: Colors.surface  // White/light background
-};
 
 const DEFAULT_NOTES = [
-    { title: 'Thu nhập', color: COLORS.income },
-    { title: 'Chi tiêu', color: COLORS.expense },
-    { title: 'Đầu tư', color: COLORS.invest },
-    { title: 'Tiết kiệm', color: COLORS.save }
+    { title: 'Thu nhập', color: colors_chart.income },
+    { title: 'Chi tiêu', color: colors_chart.expense },
+    { title: 'Đầu tư', color: colors_chart.invest },
+    { title: 'Tiết kiệm', color: colors_chart.save }
 ];
 
 
@@ -62,29 +54,30 @@ export default function ChartOverView() {
         const result = await getPieChartData(uid, dateRange.startDate / 1000, dateRange.endDate / 1000);
         if (result.success && result.data) {
             const data = result.data as PieChartData;
+            console.log('logdata', data)
 
             // Prepare data for "in" chart with first item focused
             const inData: ChartDataItemStore[] = [];
-            if (data.in.expense > 0) {
+            if (data.in.expense >= 0) {
                 inData.push({
                     value: data.in.expense,
-                    color: COLORS.income,
+                    color: colors_chart.income,
                     type: key_assets.expense,
                     title: 'Thu nhập'
                 });
             }
-            if (data.in.invest > 0) {
+            if (data.in.invest >= 0) {
                 inData.push({
                     value: data.in.invest,
-                    color: COLORS.invest,
+                    color: colors_chart.invest,
                     type: key_assets.invest,
                     title: 'Đầu tư'
                 });
             }
-            if (data.in.save > 0) {
+            if (data.in.save >= 0) {
                 inData.push({
                     value: data.in.save,
-                    color: COLORS.save,
+                    color: colors_chart.save,
                     type: key_assets.save,
                     title: 'Tiết kiệm'
                 });
@@ -99,26 +92,26 @@ export default function ChartOverView() {
 
             // Prepare data for "out" chart with first item focused
             const outData: ChartDataItemStore[] = [];
-            if (data.out.expense > 0) {
+            if (data.out.expense >= 0) {
                 outData.push({
                     value: data.out.expense,
-                    color: COLORS.expense,
+                    color: colors_chart.expense,
                     type: key_assets.expense,
                     title: 'Chi tiêu'
                 });
             }
-            if (data.out.invest > 0) {
+            if (data.out.invest >= 0) {
                 outData.push({
                     value: data.out.invest,
-                    color: COLORS.invest,
+                    color: colors_chart.invest,
                     type: key_assets.invest,
                     title: 'Đầu tư'
                 });
             }
-            if (data.out.save > 0) {
+            if (data.out.save >= 0) {
                 outData.push({
                     value: data.out.save,
-                    color: COLORS.save,
+                    color: colors_chart.save,
                     type: key_assets.save,
                     title: 'Tiết kiệm'
                 });
@@ -216,7 +209,7 @@ export default function ChartOverView() {
                                 radius={WIDTH_CHART}
                                 focusOnPress
                                 innerRadius={40}
-                                innerCircleColor={COLORS.inCircle}
+                                innerCircleColor={colors_chart.inCircle}
                                 onPress={onSelectChartIn}
                                 centerLabelComponent={renderCenterIn}
                             />
@@ -240,7 +233,7 @@ export default function ChartOverView() {
                                 radius={WIDTH_CHART}
                                 focusOnPress
                                 innerRadius={40}
-                                innerCircleColor={COLORS.inCircle}
+                                innerCircleColor={colors_chart.inCircle}
                                 onPress={onSelectChartOut}
                                 centerLabelComponent={renderCenterOut}
                             />

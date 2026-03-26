@@ -9,8 +9,8 @@ interface ItemSaveProps {
   data: {
     id: string;
     name: string;
-    total_value: number;
-    total_market?: number;
+    total_capital: number;
+    total_value?: number;
     target?: number;
     date_buy: number;
     createdAt?: any;
@@ -19,15 +19,15 @@ interface ItemSaveProps {
 }
 
 export default function ItemSave({ data, onPress }: ItemSaveProps) {
-  const { name, total_value, total_market, target, date_buy } = data;
+  const { name, total_capital, total_value, target, date_buy } = data;
 
   // Calculate progress towards target
-  const currentAmount = total_market || total_value;
+  const currentAmount = total_value || total_capital;
   const targetAmount = target || 0;
   const progress = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 100;
 
   // Calculate interest earned
-  const interestEarned = total_market ? total_market - total_value : 0;
+  const interestEarned = total_value ? total_value - total_capital : 0;
 
   const onPressItem = () => {
     if (onPress) {
@@ -48,7 +48,7 @@ export default function ItemSave({ data, onPress }: ItemSaveProps) {
       <View style={styles.moneyRow}>
         <View style={styles.moneyItem}>
           <Text style={styles.label}>{'Đã tiết kiệm'}</Text>
-          <Text style={styles.moneyValue}>{formatSmartMoney(total_value)}</Text>
+          <Text style={styles.moneyValue}>{formatSmartMoney(total_capital)}</Text>
         </View>
         <View style={styles.moneyItem}>
           <Text style={[styles.label, { textAlign: 'right' }]}>{'Hiện tại (có lãi)'}</Text>

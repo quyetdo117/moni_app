@@ -68,20 +68,21 @@ const PopupEditInvestCategory = forwardRef<PopupRef, PopupEditInvestCategoryProp
         if (!dataForm) return;
 
         try {
-            const result = await updateCategory({
+            const body = {
                 id: dataForm.id,
                 name: dataForm.name,
                 market_value: Number(dataForm.market_value) || 0,
                 date_buy: dataForm.createdAt || dataForm.date_update || 0,
                 quantity: dataForm.quantity || 0
-            });
+            };
+            const result = await updateCategory(body);
 
             if (result.success) {
                 const updatedData: DataInvestItem = {
                     ...dataForm,
                     name: dataForm.name,
                     market_value: Number(dataForm.market_value) || 0,
-                    total_market: Number(dataForm.market_value || 0) * (dataForm.quantity || 0),
+                    total_value: Number(dataForm.market_value || 0) * (dataForm.quantity || 0),
                     date_update: dataForm.createdAt || dataForm.date_update
                 };
 
@@ -96,7 +97,7 @@ const PopupEditInvestCategory = forwardRef<PopupRef, PopupEditInvestCategoryProp
         }
     };
 
-    const dateStr = dataForm?.createdAt ? moment(dataForm.createdAt * 1000).format('DD/MM/YYYY') : '';
+    const dateStr = dataForm?.date_buy ? moment(dataForm.date_buy * 1000).format('DD/MM/YYYY') : '';
     const marketValueStr = dataForm?.market_value?.toString() || '';
 
     if (!isOpen || !dataForm) return null;

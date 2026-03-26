@@ -17,12 +17,12 @@ import { DataFormInvest } from '../types/Investment.types'
 const dataOptions = [
     {
         id: 2,
-        title: 'Buy',
+        title: 'Mua tài sản',
         type: TYPE_TRANSACTION.IN
     },
     {
         id: 1,
-        title: 'Sell',
+        title: 'Bán tài sản',
         type: TYPE_TRANSACTION.OUT
     }
 ]
@@ -36,7 +36,7 @@ interface dataOption {
 type NameInputMode = 'existing' | 'new';
 
 interface PopupFormInvestProps {
-    onSuccess?: () => void;
+    onSuccess?: (data: any) => void;
 }
 
 export interface ShowPopupFormInvestConfig {
@@ -44,12 +44,10 @@ export interface ShowPopupFormInvestConfig {
 }
 
 const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) => {
-    const { onSuccess } = props;
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const isChangeMarket = useRef(false);
     const dataType = useRef<dataOption>(dataOptions[0]);
-    const refInput = useRef<Record<string, TextInput | null>>({});
     const [isOpen, setOpen] = useState(false);
     const [nameInputMode, setNameInputMode] = useState<NameInputMode>('existing');
     const [selectedAsset, setSelectedAsset] = useState<Category | null>(null);
@@ -65,7 +63,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
         quantity: '',
         rate_value: '',
         market_value: '',
-        total_value: '',
+        total_capital: '',
         date_buy: moment(new Date()).unix(),
         note: '',
         asset_id: infoAsset?.invest?.id ?? '',
@@ -73,7 +71,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
     }
     const [categories, setCategories] = useState<Category[]>([]);
     const [dataForm, setDataForm] = useState<DataFormInvest>(initData);
-    const { type, name, quantity, rate_value, total_value, date_buy, market_value } = dataForm;
+    const { name, quantity, rate_value, total_capital, date_buy, market_value } = dataForm;
     const date_ = new Date(date_buy * 1000);
     const dataStr = moment(date_buy * 1000).format('DD/MM/YYYY')
 
@@ -99,7 +97,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
     const onShow = (config?: ShowPopupFormInvestConfig | string) => {
         // Handle both string (category_id) and object config
         const categoryId = typeof config === 'string' ? config : config?.category_id;
-        
+
         if (categoryId) {
             // Pre-select the category - try to find in loaded categories first
             const category = categories.find(c => c.id === categoryId);
@@ -180,7 +178,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
     }
 
     const onCreate = async () => {
-        if (name && quantity && rate_value && total_value && date_buy && market_value) {
+        if (name && quantity && rate_value && total_capital && date_buy && market_value) {
             const jsonCreate = await createTransactionInvest(dataForm)
             if (jsonCreate.success) {
                 handleCreateSuccess(jsonCreate.data);
@@ -205,9 +203,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
             // Cập nhật item hiện có
             const updatedList = [...listInvest];
             updatedList[existingIndex] = {
-                ...updatedList[existingIndex],
-                total_value: (updatedList[existingIndex].total_value || 0) + (createdData.total_value || 0),
-                quantity: (updatedList[existingIndex].quantity || 0) + (createdData.quantity || 0)
+                ...createdData
             };
             setListInvest(updatedList);
         } else {
@@ -216,8 +212,14 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
         }
 
         // Cập nhật chart
-        const valueChange = dataForm.type === TYPE_TRANSACTION.IN ? Number(total_value) : -Number(total_value);
+        const valueChange = dataForm.type === TYPE_TRANSACTION.IN ? Number(total_capital) : -Number(total_capital);
         updateChartData(key_assets.invest, valueChange, { date_buy: dataForm.date_buy, type: dataForm.type });
+
+        // Gọi callback onSuccess với dữ liệu trả về
+        console.log('logg createdData', createdData)
+        if (props.onSuccess) {
+            props.onSuccess(createdData);
+        }
 
         onClose();
     }
@@ -235,7 +237,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
             case 'rate_value': return 'Đơn giá';
             case 'market_value': return 'Giá thị trường';
             case 'extra_value': return 'Chi phí phát sinh';
-            case 'total_value': return 'Tổng vốn';
+            case 'total_capital': return 'Tổng vốn';
             case 'date_buy': return 'Ngày tạo';
             case 'note': return 'Note';
 
@@ -244,28 +246,18 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
     }
 
     const onGetValue = (type: string) => {
-        const { name, quantity, rate_value, market_value, total_value, note } = dataForm;
+        const { name, quantity, rate_value, market_value, total_capital, note } = dataForm;
         switch (type) {
             case 'name': return name;
             case 'quantity': return quantity.toString();
             case 'rate_value': return rate_value.toString();
             case 'market_value': return market_value.toString();
             // case 'extra_value': return extra_value?.toString();
-            case 'total_value': return total_value.toString();
+            case 'total_capital': return total_capital.toString();
             case 'date_buy': return dataStr;
             case 'note': return note;
 
             default: return '';
-        }
-    }
-
-    const onPressBoxInput = (type: string) => {
-        if (type == 'date_buy') {
-            openShowDate();
-        } else {
-            if (refInput.current[type]) {
-                refInput.current[type].focus();
-            }
         }
     }
 
@@ -431,7 +423,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
                 {renderField('market_value')}
 
                 {/* Total Value */}
-                {renderField('total_value')}
+                {renderField('total_capital')}
 
                 {/* Date */}
                 <Text style={styles.label}>{onGetTitle('date_buy')}</Text>

@@ -35,7 +35,7 @@ export default function HomeScreen({ navigation, route }: MainTabScreenProps<'Ho
     const data = await getInfoUser(uid);
     if (data.success && data.data) {
       const dataUser = data.data as InfoUser;
-      const assets = data.data.assets || [];
+      const assets = dataUser.assets || [];
       setInfoAsset(assets);
       setInfoUser(dataUser)
     }

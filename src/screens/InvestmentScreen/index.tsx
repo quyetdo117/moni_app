@@ -6,6 +6,7 @@ import { key_assets } from '@/constants/constants';
 import { getCategories } from '@/services/Api/get.services';
 import { useListStore, useUserStore } from '@/store/main.store';
 import { RootStackScreenProps } from '@/types/navigation.types';
+import { Category } from '@/types/schema.types';
 import { PopupRef } from '@/types/view.types';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useRef, useState } from 'react';
@@ -46,6 +47,7 @@ const data_init = [
 export default function InvestmentScreen({ navigation }: RootStackScreenProps<'InvestmentScreen'>) {
     const PopupFormRef = useRef<PopupRef>(null);
     const infoAsset = useUserStore(state => state.infoAsset);
+    const setInfoAsset = useUserStore(state => state.setInfoAsset);
     const setListInvest = useListStore(state => state.setListInvest);
     const listInvest = useListStore(state => state.listInvest);
     const uid = useUserStore(state => state.uid);
@@ -61,8 +63,8 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
 
     useEffect(() => {
         const newData = [...data_init];
-        newData[0].total_value = infoAsset?.invest?.total_value || 0;
-        newData[1].total_value = infoAsset?.invest?.total_market || 0;
+        newData[0].total_value = infoAsset?.invest?.total_capital || 0;
+        newData[1].total_value = infoAsset?.invest?.total_value || 0;
         setDataInvest(newData);
     }, [infoAsset])
 
@@ -78,8 +80,25 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
         }
     }
 
-    const onCreateSuccess = async () => {
-        getList();
+    const onCreateSuccess = async (data: Category) => {
+        const dataInvest = infoAsset.invest;
+        const dataExpense = infoAsset.expense;
+        
+        // Get old category data if exists (for update case)
+        const oldCategory = listInvest.find(item => item.id === data.id);
+        
+        // Calculate the difference between new and old values
+        const oldTotalCapital = oldCategory?.total_capital || 0;
+        const oldTotalValue = oldCategory?.total_value || 0;
+        const diffTotalCapital = (data.total_capital || 0) - oldTotalCapital;
+        const diffTotalValue = (data.total_value || 0) - oldTotalValue;
+        
+        if (dataInvest && dataExpense) {
+            dataInvest.total_capital += diffTotalCapital;
+            dataInvest.total_value += diffTotalValue;
+            dataExpense.total_value -= diffTotalCapital;
+            setInfoAsset([dataInvest])
+        }
     }
 
     const onBack = () => {

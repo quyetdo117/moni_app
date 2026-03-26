@@ -47,21 +47,18 @@ export const assets_init = [
     {
         user_id: '',
         name: 'Tài khoản chi tiêu',
-        total_value: 0,
         type: "expense",
         stt: 0
     },
     {
         user_id: '',
         name: 'Tài khoản đầu tư',
-        total_value: 0,
         type: "invest",
         stt: 1
     },
     {
         user_id: '',
         name: 'Tài khoản tiết kiệm',
-        total_value: 0,
         type: "save",
         stt: 2
     }

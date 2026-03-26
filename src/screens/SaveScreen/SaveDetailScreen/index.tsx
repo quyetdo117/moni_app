@@ -29,8 +29,8 @@ interface DataItem {
 export interface SaveDetailData {
     id: string;
     name: string;
+    total_capital: number;
     total_value: number;
-    total_market?: number;
     target?: number;
     date_buy: number;
     createdAt?: any;
@@ -100,20 +100,20 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
                 // Update infoAsset
                 if (infoAsset?.['save']) {
-                    const currentTotalSave = infoAsset['save'].total_value || 0;
-                    const currentTotalMarket = infoAsset['save'].total_market || 0;
-                    const newTotalSave = currentTotalSave - (data.total_value || 0);
-                    const newTotalMarket = currentTotalMarket - (data.total_market || 0);
+                    const currentTotalSave = infoAsset['save'].total_capital || 0;
+                    const currentTotalMarket = infoAsset['save'].total_value || 0;
+                    const newTotalSave = currentTotalSave - (data.total_capital || 0);
+                    const newTotalMarket = currentTotalMarket - (data.total_value || 0);
 
                     const updatedAsset = {
                         ...infoAsset['save'],
-                        total_value: newTotalSave,
-                        total_market: newTotalMarket || 0
+                        total_capital: newTotalSave,
+                        total_value: newTotalMarket || 0
                     };
 
                     const updatedAssetExpense = {
                         ...infoAsset['expense'],
-                        total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_value || 0)
+                        total_value: Number(infoAsset['expense']?.total_value || 0) + (data.total_capital || 0)
                     };
 
                     setInfoAsset([updatedAsset as any, updatedAssetExpense as any]);
@@ -182,8 +182,8 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
         // Cập nhật asset thành công mới
         const updatedAsset = {
             ...currentSaveAsset,
-            total_value: newTotalSave,
-            total_market: newTotalMarket
+            total_capital: newTotalSave,
+            total_value: newTotalMarket
         };
 
         const updatedAssetExpense = {
@@ -203,21 +203,21 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
         setDataList(dataListChange);
 
         // Update saveData locally
-        const { total_value, total_market } = saveData;
+        const { total_capital, total_value } = saveData;
+        const newTotalCapital = (total_capital || 0) + valueChange;
         const newTotalValue = (total_value || 0) + valueChange;
-        const newTotalMarket = total_market ? (total_market + valueChange) : newTotalValue;
 
         const newData = {
             ...saveData,
-            total_value: newTotalValue,
-            total_market: newTotalMarket
+            total_capital: newTotalCapital,
+            total_value: newTotalValue
         };
 
         setSaveData(newData);
 
         // Update store
         const updatedListSave = listSave.map(item =>
-            item.id === newData.id ? { ...item, total_value: newTotalValue, total_market: newTotalMarket } : item
+            item.id === newData.id ? { ...item, total_capital: newTotalCapital, total_value: newTotalValue } : item
         );
         setListSave(updatedListSave);
     };
@@ -236,7 +236,7 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
     const confirmDelete = async (transactionData: InfoTransaction) => {
         try {
-            const jsonData = await deleteTransaction(transactionData.id);
+            const jsonData = await deleteTransaction(transactionData.id, key_assets.save);
             if (jsonData.success) {
                 const isAdd = transactionData.type === TYPE_TRANSACTION.IN;
                 const valueDelete = isAdd ? -transactionData.total_value : transactionData.total_value;
@@ -246,8 +246,8 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
                 // Update infoAsset['save'] in store
                 if (infoAsset?.[key_assets.save]) {
-                    const currentTotalSave = infoAsset[key_assets.save]?.total_value || 0;
-                    const currentTotalMarket = infoAsset[key_assets.save]?.total_market || 0;
+                    const currentTotalSave = infoAsset[key_assets.save]?.total_capital || 0;
+                    const currentTotalMarket = infoAsset[key_assets.save]?.total_value || 0;
                     const newTotalSave = currentTotalSave + valueDelete;
                     const newTotalMarket = currentTotalMarket + valueDelete;
                     updateInfoUserStore(newTotalSave, newTotalMarket, valueDelete);
@@ -301,8 +301,8 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
 
         // Update infoAsset['save'] in store
         if (infoAsset?.[key_assets.save]) {
-            const currentTotalSave = infoAsset[key_assets.save]?.total_value || 0;
-            const currentTotalMarket = infoAsset[key_assets.save]?.total_market || 0;
+            const currentTotalSave = infoAsset[key_assets.save]?.total_capital || 0;
+            const currentTotalMarket = infoAsset[key_assets.save]?.total_value || 0;
             const newTotalSave = currentTotalSave + valueChange;
             const newTotalMarket = currentTotalMarket + valueChange;
             updateInfoUserStore(newTotalSave, newTotalMarket, valueChange);
@@ -332,10 +332,10 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
     const dateStr = dateTimestamp ? moment.unix(dateTimestamp).format('DD/MM/YYYY') : '';
 
     // Calculate interest
-    const interestEarned = saveData.total_market ? saveData.total_market - saveData.total_value : 0;
+    const interestEarned = saveData.total_value ? saveData.total_value - saveData.total_capital : 0;
 
     // Calculate progress towards target
-    const currentAmount = saveData.total_market || saveData.total_value;
+    const currentAmount = saveData.total_value || saveData.total_capital;
     const targetAmount = saveData.target || 0;
     const progress = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 100;
 

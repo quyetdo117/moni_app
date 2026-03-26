@@ -1,6 +1,6 @@
+import { Colors } from '@/constants/theme';
 import React, { useImperativeHandle, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { Colors } from '../../constants/constants';
 import { PopupRef } from '../../types/view.types';
 
 export interface ToastConfig {

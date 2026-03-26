@@ -72,7 +72,7 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
                 name: dataForm.name,
                 target_value: dataForm.target || 0,
                 date_buy: dataForm.date_buy || 0,
-                total_market: dataForm.total_market || dataForm.total_value || 0,
+                total_value: dataForm.total_value || 0,
             });
 
             if (result.success) {
@@ -135,7 +135,7 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
                 <View style={styles.rowInfo}>
                     <Text style={styles.label}>Số tiền hiện tại:</Text>
                     <Text style={styles.valueInfo}>
-                        {((dataForm.total_market || dataForm.total_value) || 0).toLocaleString()} ₫
+                        {((dataForm.total_value) || 0).toLocaleString()} ₫
                     </Text>
                 </View>
 

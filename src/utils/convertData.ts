@@ -12,7 +12,7 @@ import { StyleSheet } from "react-native";
 /**
  * Calculate ROI (Return on Investment)
  */
-export const calculateROI = (capital: number, currentValue: number): number => {
+export const calculateROI = (capital: number = 0, currentValue: number = 0): number => {
   if (!capital || capital === 0) return 0;
 
   const roi = ((currentValue - capital) / capital) * 100;
@@ -146,4 +146,13 @@ export const getIconByTypeDisplay = (typeDisplay: number): IconData => {
     default:
       return { name: 'help-circle', library: Ionicons, color: '#000' };
   }
+}; 
+
+/**
+ * Round number to avoid floating point errors (e.g., 0.3 - 0.1 = 0.19999999999999998)
+ * @param value - The number to round
+ * @returns Rounded number with 10 decimal places precision
+ */
+export const roundNumber = (value: number): number => {
+  return Math.round(value * 10000000000) / 10000000000;
 }; 

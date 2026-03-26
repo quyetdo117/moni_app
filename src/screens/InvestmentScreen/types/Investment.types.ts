@@ -2,7 +2,7 @@ import { Category } from "@/types/schema.types";
 
 export interface DataInvestItem extends Category {
     createdAt?: number;
-    total_market: number;
+    total_capital: number;
 }
 
 export interface DataTransaction {
@@ -23,7 +23,7 @@ export interface DataFormInvest {
     quantity: string,
     rate_value: string,
     market_value: string,
-    total_value: string,
+    total_capital: string,
     date_buy: number,
     note?: string,
     category_id?: string,

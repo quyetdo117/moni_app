@@ -32,7 +32,7 @@ export interface ChartStore {
     setDataFocusIn: (data: ChartDataItemStore | null) => void;
     setDataFocusOut: (data: ChartDataItemStore | null) => void;
     setChartDateRange: (range: ChartDateRange) => void;
-    updateChartData: (type: type_asset, valueChange: number, data: { date_buy: number; type: number }) => void;
+    updateChartData: (type: type_asset | 'income', valueChange: number, data: { date_buy: number; type: number }) => void;
 }
 
 export type ChartDataItemStore = { value: number; color: string; title: string; type: string; focused?: boolean; };

@@ -130,6 +130,14 @@ export const getColorTransaction = (type: number): string => {
     return transactionColors[type] || Colors.divider;
 }
 
+export const colors_chart = {
+    income: '#10B981',     // Success green
+    expense: '#EF4444',   // Error red
+    invest: '#8B5CF6',    // Purple
+    save: '#3B82F6',      // Blue
+    inCircle: Colors.surface  // White/light background
+};
+
 // ============================================
 // DATABASE TABLES
 // ============================================
@@ -154,5 +162,11 @@ export const types_display = {
     other_expense: 6,
     invest: 7,
     save: 8
+}
+
+export const key_status = {
+    active: 'active',
+    lock: 'lock',
+    completed: 'completed'
 }
 

@@ -7,7 +7,7 @@ import LineList from '@/components/common/LineList';
 import ItemPayment from '@/components/items/ItemPayment';
 import { PopupConfirm } from '@/components/popups/PopupConfirm';
 import { PopupToast } from '@/components/popups/PopupToast';
-import { COLOR_APP, getColorCategory, key_assets } from '@/constants/constants';
+import { COLOR_APP, getColorCategory, key_assets, TYPE_TRANSACTION } from '@/constants/constants';
 import { getInfoExpense, getListTransaction } from '@/services/Api/get.services';
 import { deleteTransaction } from '@/services/Api/transaction.services';
 import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
@@ -57,15 +57,10 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     const infoAsset = useUserStore(state => state.infoAsset);
     const setInfoAsset = useUserStore(state => state.setInfoAsset);
 
-    // Hàm dùng chung để cập nhật infoAsset
     const updateInfoAssetValue = (valueChange: number, transactionType: number) => {
         const currentExpenseAsset = infoAsset?.[key_assets.expense];
         if (!currentExpenseAsset) return;
-
-        // Xác định giá trị thay đổi dựa trên type giao dịch
-        // transactionType = 1 (IN/Thu nhập) -> cộng vào
-        // transactionType = 0 (OUT/Chi tiêu) -> trừ đi
-        const actualChange = transactionType === 1 ? valueChange : -valueChange;
+        const actualChange = transactionType === TYPE_TRANSACTION.IN ? -valueChange : valueChange;
 
         const updatedAsset = {
             ...currentExpenseAsset,
@@ -161,7 +156,7 @@ export default function ExpenseScreen({ navigation, route }: RootStackScreenProp
     }
 
     const confirmDelete = async (data: InfoTransaction) => {
-        const dataJson = await deleteTransaction(data.id);
+        const dataJson = await deleteTransaction(data.id, key_assets.expense);
         if (dataJson.success) {
             setDataList(prev => prev.filter(i => i.id !== data.id));
             onChangeInfo(data);

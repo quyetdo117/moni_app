@@ -36,8 +36,8 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
 
   // Calculate totals
   
-  const totalSaved = saveAsset?.total_value || 0;
-  const totalWithInterest = saveAsset?.total_market || totalSaved;
+  const totalSaved = saveAsset?.total_capital || 0;
+  const totalWithInterest = saveAsset?.total_value || totalSaved;
 
   useEffect(() => {
     getData();
@@ -80,10 +80,10 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
         data={{
           id: item.id,
           name: item.name,
+          total_capital: item.total_capital || 0,
           total_value: item.total_value,
-          total_market: item.market_value,
           target: item.target_value,
-          date_buy: item.date_update,
+          date_buy: item.date_buy,
         }}
         onPress={onItemPress}
       />

@@ -83,7 +83,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
     }, [])
 
     const getListCate = async () => {
-        const dataBody = { asset_id: infoAsset?.expense?.id, type: key_assets.invest }
+        const dataBody = { asset_id: infoAsset?.expense?.id, type: key_assets.expense }
         const data = await getCategories(dataBody, uid)
         const dataList = data.data
         if (data.success && dataList) {
@@ -208,7 +208,8 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             console.log('loggg dataForm', JSON.stringify(dataForm));
             if (jsonCreate.success) {
                 // Add new value
-                updateChartData(key_assets.expense, Number(total_value), { date_buy: dataForm.date_buy, type: dataForm.type });
+                const type_chart = dataForm.type == TYPE_TRANSACTION.IN ? 'income' : key_assets.expense ;
+                updateChartData(type_chart, Number(total_value), { date_buy: dataForm.date_buy, type: dataForm.type });
                 // Update infoAsset
                 updateInfoAssetValue(Number(total_value), dataForm.type);
                 onClose();
