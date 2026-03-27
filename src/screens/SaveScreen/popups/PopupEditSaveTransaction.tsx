@@ -2,11 +2,11 @@ import { COLOR_APP } from '@/constants/constants';
 import { updateTransaction } from '@/services/Api/transaction.services';
 import { InfoTransaction } from '@/types/info.types';
 import { PopupRef } from '@/types/view.types';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface PopupEditSaveTransactionProps {
     onSuccess?: (data: InfoTransaction) => void;
@@ -119,7 +119,7 @@ const PopupEditSaveTransaction = forwardRef<PopupRef, PopupEditSaveTransactionPr
 
                 {/* Total Value Input */}
                 <Text style={styles.label}>Số tiền</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={onGetValue('total_value')}
                     onChangeText={(value) => onChangeText('total_value', value)}
@@ -147,7 +147,7 @@ const PopupEditSaveTransaction = forwardRef<PopupRef, PopupEditSaveTransactionPr
 
                 {/* Note Input */}
                 <Text style={styles.label}>Ghi chú</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={[styles.input, styles.noteInput]}
                     value={dataForm.note || ''}
                     onChangeText={(value) => onChangeText('note', value)}

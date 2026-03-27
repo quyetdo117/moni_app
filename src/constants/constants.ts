@@ -58,7 +58,7 @@ export const types_expense = [
 // ASSET KEYS
 // ============================================
 
-export const key_assets: Record<string, type_asset> = {
+export const key_assets: Record<type_asset, type_asset> = {
     expense: 'expense',
     invest: 'invest',
     save: 'save'

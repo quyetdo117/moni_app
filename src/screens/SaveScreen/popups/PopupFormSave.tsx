@@ -5,11 +5,11 @@ import { useChartStore, useListStore, useUserStore } from '@/store/main.store';
 import { Category } from '@/types/schema.types';
 import { PopupRef } from '@/types/view.types';
 import RNBounceable from '@freakycoder/react-native-bounceable';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { DataFormSave } from '../types/Save.types';
 
@@ -83,7 +83,7 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
 
   const getCategoriesSave = async () => {
     try {
-      const dataBody = {asset_id: saveAsset?.id, type: key_assets.save}
+      const dataBody = { asset_id: saveAsset?.id, type: key_assets.save }
       const jsonData = await getCategories(dataBody, uid);
       if (jsonData.success) {
         const list = (jsonData.data as Category[]) || [];
@@ -104,7 +104,7 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
     setSelectedAsset(null);
     setNameInputMode('existing');
     dataType.current = dataOptions[0];
-    
+
     if (bottomSheetRef.current) {
       bottomSheetRef.current.snapToIndex(1);
     }
@@ -147,12 +147,12 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
 
   const onChangeText = (value: string, field: string) => {
     if (!isChangeMarket.current && field === 'market_value') {
-        isChangeMarket.current = true;
-      }
-      setDataForm({
-        ...dataForm,
-        [field]: value,
-      });
+      isChangeMarket.current = true;
+    }
+    setDataForm({
+      ...dataForm,
+      [field]: value,
+    });
   };
 
   const onCreate = async () => {
@@ -256,7 +256,7 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
   const renderInputByKey = (key: string, keyboardType: 'default' | 'numeric' = 'default') => (
     <>
       <Text style={styles.label}>{getLabel(key)}</Text>
-      <TextInput
+      <BottomSheetTextInput
         style={styles.input}
         value={getFieldValue(key)}
         onChangeText={(txt) => onChangeText(txt, key)}
@@ -276,6 +276,8 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
       ref={bottomSheetRef}
       index={-1}
       snapPoints={snapPoints}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
       enablePanDownToClose={true}
       onAnimate={(fromIndex, toIndex) => {
         if (toIndex === 0) {
@@ -321,7 +323,7 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
                 onChange={onSelectExistingAsset}
               />
             ) : (
-              <TextInput
+              <BottomSheetTextInput
                 placeholder="Nhập tên sổ tiết kiệm ..."
                 onChangeText={(txt) => onChangeText(txt, 'name')}
                 value={dataForm.name}
@@ -360,7 +362,7 @@ const PopupFormSave = forwardRef<PopupRef, PopupFormSaveProps>((props, ref) => {
         )}
 
         <Text style={styles.label}>{'Ghi chú'}</Text>
-        <TextInput
+        <BottomSheetTextInput
           style={[styles.input, styles.noteInput]}
           value={dataForm.note}
           onChangeText={(txt) => setDataForm({ ...dataForm, note: txt })}

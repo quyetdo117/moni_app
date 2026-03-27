@@ -2,11 +2,11 @@ import { COLOR_APP } from '@/constants/constants';
 import { updateTransaction } from '@/services/Api/transaction.services';
 import { InfoTransaction } from '@/types/info.types';
 import { PopupRef } from '@/types/view.types';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface PopupEditTransactionProps {
     onSuccess?: (data: InfoTransaction) => void;
@@ -101,6 +101,8 @@ const PopupEditTransaction = forwardRef<PopupRef, PopupEditTransactionProps>((pr
             ref={bottomSheetRef}
             index={-1}
             snapPoints={snapPoints}
+            keyboardBehavior="extend"
+            keyboardBlurBehavior="restore"
             onClose={() => setOpen(false)}
             backdropComponent={renderBackdrop}
             enablePanDownToClose
@@ -116,7 +118,7 @@ const PopupEditTransaction = forwardRef<PopupRef, PopupEditTransactionProps>((pr
 
                 {/* Quantity Input */}
                 <Text style={styles.label}>Số lượng</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={onGetValue('quantity')}
                     onChangeText={(value) => onChangeText('quantity', value)}
@@ -126,7 +128,7 @@ const PopupEditTransaction = forwardRef<PopupRef, PopupEditTransactionProps>((pr
 
                 {/* Rate Value Input */}
                 <Text style={styles.label}>Giá trị đơn vị</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={onGetValue('rate_value')}
                     onChangeText={(value) => onChangeText('rate_value', value)}
@@ -136,7 +138,7 @@ const PopupEditTransaction = forwardRef<PopupRef, PopupEditTransactionProps>((pr
 
                 {/* Total Value Display */}
                 <Text style={styles.label}>Tổng vốn</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={onGetValue('total_value')}
                     onChangeText={(value) => onChangeText('total_value', value)}
@@ -164,7 +166,7 @@ const PopupEditTransaction = forwardRef<PopupRef, PopupEditTransactionProps>((pr
 
                 {/* Note Input */}
                 <Text style={styles.label}>Ghi chú</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={[styles.input, styles.noteInput]}
                     value={dataForm.note}
                     onChangeText={(value) => onChangeText('note', value)}

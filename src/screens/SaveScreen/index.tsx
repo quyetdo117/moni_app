@@ -12,7 +12,7 @@ import { formatSmartMoney } from '@/utils/convertData';
 import { commonStyles } from '@/utils/styles_shadow';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { BorderRadius, Colors, Spacing, Typography } from '../../constants/theme';
 import ItemSave from './items/ItemSave';
 import PopupFormSave from './popups/PopupFormSave';
@@ -35,7 +35,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
   const saveAsset = infoAsset?.[key_assets.save];
 
   // Calculate totals
-  
+
   const totalSaved = saveAsset?.total_capital || 0;
   const totalWithInterest = saveAsset?.total_value || totalSaved;
 
@@ -44,7 +44,7 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
   }, []);
 
   const onBack = () => {
-    if(navigation) navigation.goBack();
+    if (navigation) navigation.goBack();
   }
 
   const getData = async () => {
@@ -106,9 +106,9 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
             </View>
           </View>
           <View style={styles.interestRow}>
-              <Text style={styles.interestLabel}>{'Bao gồm lãi:'}</Text>
-              <Text style={styles.interestValue}>+{formatSmartMoney(totalWithInterest - totalSaved)}</Text>
-            </View>
+            <Text style={styles.interestLabel}>{'Bao gồm lãi:'}</Text>
+            <Text style={styles.interestValue}>+{formatSmartMoney(totalWithInterest - totalSaved)}</Text>
+          </View>
         </View>
 
         {/* Create Button */}
@@ -128,22 +128,20 @@ export default function SaveScreen({ navigation, route }: RootStackScreenProps<'
   }, [totalSaved, totalWithInterest]);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <View style={styles.container}>
-        <HeaderView onBack={onBack} title='Tiết kiệm' />
-        <FlatList
-          ListHeaderComponent={renderHeader}
-          renderItem={renderItem}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          data={listSave}
-          keyExtractor={keyExtractor_}
-          ListEmptyComponent={<EmptyView />}
-          contentContainerStyle={styles.listContent}
-        />
+    <View style={styles.container}>
+      <HeaderView onBack={onBack} title='Tiết kiệm' />
+      <FlatList
+        ListHeaderComponent={renderHeader}
+        renderItem={renderItem}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        data={listSave}
+        keyExtractor={keyExtractor_}
+        ListEmptyComponent={<EmptyView />}
+        contentContainerStyle={styles.listContent}
+      />
 
-        <PopupFormSave onSuccess={onRefresh} ref={refPopupForm} />
-      </View>
-    </KeyboardAvoidingView>
+      <PopupFormSave onSuccess={onRefresh} ref={refPopupForm} />
+    </View>
   );
 }
 

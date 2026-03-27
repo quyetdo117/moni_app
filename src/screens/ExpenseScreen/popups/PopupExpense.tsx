@@ -2,14 +2,14 @@
 import { COLOR_APP, key_assets, TYPE_TRANSACTION, types_display, types_expense } from '@/constants/constants'
 import { getCategories } from '@/services/Api/get.services'
 import { createTransactionExpense, updateTransaction } from '@/services/Api/transaction.services'
-import { useChartStore, useUserStore } from '@/store/main.store'
+import { useChartStore, useListStore, useUserStore } from '@/store/main.store'
 import { Category } from '@/types/schema.types'
 import { PopupRef } from '@/types/view.types'
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import moment from 'moment'
 import React, { Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown'
 import { DataFormExpense } from '../types/Expense.types'
 
@@ -23,11 +23,11 @@ interface dataOption {
 }
 
 interface PopupExpenseProps {
-    ref: Ref<PopupRef>,
-    onRefresh: () => void
+    ref: Ref<PopupRef>
+    onUpdateDataBase?: (type: number, valueChange: number, isNew: boolean, oldType?: number) => void
 }
 
-const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
+const PopupFormExpense = ({ ref, onUpdateDataBase }: PopupExpenseProps) => {
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const [dataType, setType] = useState<dataOption>(types_expense[0]);
@@ -40,6 +40,8 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
     const isSelect = useRef(false);
     const oldDataRef = useRef<DataFormExpense | null>(null);
     const updateChartData = useChartStore(state => state.updateChartData);
+    const setCategoriesExpense = useListStore(state => state.setCategoriesExpense);
+    const categoriesExpense = useListStore(state => state.categoriesExpense);
 
     // Hàm dùng chung để cập nhật infoAsset
     const updateInfoAssetValue = (valueChange: number, transactionType: number) => {
@@ -58,6 +60,41 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         setInfoAsset([updatedAsset]);
     };
 
+    // Hàm cập nhật total_value của category tương ứng trong categoriesExpense
+    const updateCategoryTotalValue = (categoryId: string, valueChange: number, isNewTransaction: boolean, oldCategoryId?: string) => {
+        // Nếu có oldCategoryId, cập nhật cả category cũ và mới
+        if (oldCategoryId && oldCategoryId !== categoryId) {
+            const updatedCategories = categoriesExpense.map(category => {
+                if (category.id === oldCategoryId) {
+                    return {
+                        ...category,
+                        total_value: Number(category.total_value || 0) - valueChange
+                    };
+                }
+                if (category.id === categoryId) {
+                    return {
+                        ...category,
+                        total_value: Number(category.total_value || 0) + valueChange
+                    };
+                }
+                return category;
+            });
+            setCategoriesExpense(updatedCategories);
+        } else {
+            // Chỉ cập nhật một category
+            const updatedCategories = categoriesExpense.map(category => {
+                if (category.id === categoryId) {
+                    return {
+                        ...category,
+                        total_value: Number(category.total_value || 0) + valueChange
+                    };
+                }
+                return category;
+            });
+            setCategoriesExpense(updatedCategories);
+        }
+    };
+
 
     const initData = {
         type: TYPE_TRANSACTION.OUT,
@@ -72,7 +109,6 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
     }
     const [dataForm, setDataForm] = useState<DataFormExpense>(initData);
     const { name, total_value, date_buy } = dataForm;
-    const [listCate, setListCate] = useState<Category[]>([]);
     const date_ = new Date(date_buy * 1000);
     const dataStr = moment(date_buy * 1000).format('DD/MM/YYYY')
 
@@ -84,21 +120,23 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
 
     const getListCate = async () => {
         const dataBody = { asset_id: infoAsset?.expense?.id, type: key_assets.expense }
-        const data = await getCategories(dataBody, uid)
-        const dataList = data.data
-        if (data.success && dataList) {
-            setCategory(dataList[0]);
-            onSetType(dataList[0].type);
-            setDataForm({
-                ...dataForm,
-                category_id: dataList[0].id,
-                type: dataList[0].type,
-                type_display: dataList[0].type_display
-            })
-            setListCate(dataList)
-        } else {
-            Alert.alert(data.msg)
+        let dataList = categoriesExpense;
+        if (dataList.length === 0 || !dataList) {
+            const dataJson = await getCategories(dataBody, uid)
+            dataList = dataJson.data || [];
+            if (!dataJson.success) {
+                Alert.alert(dataJson.msg)
+            }
         }
+        setCategory(dataList[0]);
+        onSetType(dataList[0].type);
+        setDataForm({
+            ...dataForm,
+            category_id: dataList[0].id,
+            type: dataList[0].type,
+            type_display: dataList[0].type_display
+        })
+        setCategoriesExpense(dataList)
     }
 
     const onSetType = (type: number) => {
@@ -125,7 +163,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             oldDataRef.current = data;
             const { category_id, type } = data
             setDataForm(data);
-            const dataCate = listCate.find(item => item.id == category_id);
+            const dataCate = categoriesExpense.find(item => item.id == category_id);
             if (dataCate) {
                 setCategory(dataCate);
                 onSetType(type);
@@ -164,7 +202,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
         []
     );
     const onClose = () => {
-        const newCate = listCate[0];
+        const newCate = categoriesExpense[0];
         setCategory(newCate);
         onSetType(newCate.type);
         const dataReset = {
@@ -195,6 +233,13 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
                 updateChartData(key_assets.expense, valueChange, { date_buy: dataForm.date_buy, type: dataForm.type });
                 // Update infoAsset
                 updateInfoAssetValue(valueChange, dataForm.type);
+                // Update category total_value in categoriesExpense
+                updateCategoryTotalValue(dataForm.category_id, valueChange, false, oldDataRef.current?.category_id);
+                // Update data_base
+                if (onUpdateDataBase) {
+                    const oldType = oldDataRef.current?.type;
+                    onUpdateDataBase(dataForm.type, valueChange, false, oldType);
+                }
                 onClose();
             }
         } else {
@@ -208,10 +253,16 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             console.log('loggg dataForm', JSON.stringify(dataForm));
             if (jsonCreate.success) {
                 // Add new value
-                const type_chart = dataForm.type == TYPE_TRANSACTION.IN ? 'income' : key_assets.expense ;
+                const type_chart = dataForm.type == TYPE_TRANSACTION.IN ? 'income' : key_assets.expense;
                 updateChartData(type_chart, Number(total_value), { date_buy: dataForm.date_buy, type: dataForm.type });
                 // Update infoAsset
                 updateInfoAssetValue(Number(total_value), dataForm.type);
+                // Update category total_value in categoriesExpense
+                updateCategoryTotalValue(dataForm.category_id, Number(total_value), true);
+                // Update data_base
+                if (onUpdateDataBase) {
+                    onUpdateDataBase(dataForm.type, Number(total_value), true);
+                }
                 onClose();
             }
         } else {
@@ -246,7 +297,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
                         <Text style={styles.dateText}>{onGetValue(type)}</Text>
                     </TouchableOpacity>
                 ) : (
-                    <TextInput
+                    <BottomSheetTextInput
                         style={[styles.input, isNote && styles.noteInput]}
                         value={onGetValue(type)}
                         onChangeText={(txt) => {
@@ -309,7 +360,7 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
                 <Text style={styles.label}>{isCategory ? 'Danh mục' : 'Loại giao dịch'}</Text>
                 <View style={styles.input}>
                     <Dropdown
-                        data={isCategory ? listCate : types_expense}
+                        data={isCategory ? categoriesExpense : types_expense}
                         disable={!isCategory && !isSelect.current}
                         labelField={isCategory ? "name" : "title"}
                         valueField={isCategory ? "name" : "title"}
@@ -330,6 +381,8 @@ const PopupFormExpense = ({ ref, onRefresh }: PopupExpenseProps) => {
             ref={bottomSheetRef}
             index={-1}
             snapPoints={snapPoints}
+            keyboardBehavior="extend"
+            keyboardBlurBehavior="restore"
             enablePanDownToClose={true}
             onAnimate={(fromIndex, toIndex) => {
                 if (toIndex === 0) {

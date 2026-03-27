@@ -10,7 +10,7 @@ import { Category } from '@/types/schema.types';
 import { PopupRef } from '@/types/view.types';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { Colors, Spacing } from '../../constants/theme';
 import ItemInvest from './items/ItemInvest';
 import PopupFormInvest from './popups/PopupFormInvest';
@@ -83,16 +83,16 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
     const onCreateSuccess = async (data: Category) => {
         const dataInvest = infoAsset.invest;
         const dataExpense = infoAsset.expense;
-        
+
         // Get old category data if exists (for update case)
         const oldCategory = listInvest.find(item => item.id === data.id);
-        
+
         // Calculate the difference between new and old values
         const oldTotalCapital = oldCategory?.total_capital || 0;
         const oldTotalValue = oldCategory?.total_value || 0;
         const diffTotalCapital = (data.total_capital || 0) - oldTotalCapital;
         const diffTotalValue = (data.total_value || 0) - oldTotalValue;
-        
+
         if (dataInvest && dataExpense) {
             dataInvest.total_capital += diffTotalCapital;
             dataInvest.total_value += diffTotalValue;
@@ -170,22 +170,17 @@ export default function InvestmentScreen({ navigation }: RootStackScreenProps<'I
     }
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <View style={styles.container}>
-                <HeaderView onBack={onBack} title={'Đầu tư'} />
-                <FlatList
-                    ListHeaderComponent={renderHeader}
-                    data={listInvest}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor_}
-                    contentContainerStyle={styles.listContent}
-                />
-                <PopupFormInvest ref={PopupFormRef} onSuccess={onCreateSuccess} />
-            </View>
-        </KeyboardAvoidingView>
+        <View style={styles.container}>
+            <HeaderView onBack={onBack} title={'Đầu tư'} />
+            <FlatList
+                ListHeaderComponent={renderHeader}
+                data={listInvest}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor_}
+                contentContainerStyle={styles.listContent}
+            />
+            <PopupFormInvest ref={PopupFormRef} onSuccess={onCreateSuccess} />
+        </View>
     )
 }
 

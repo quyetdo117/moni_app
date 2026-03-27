@@ -15,7 +15,7 @@ import { PopupRef } from '@/types/view.types';
 import { formatSmartMoney } from '@/utils/convertData';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../../../constants/theme';
 import PopupEditSaveCategory from '../popups/PopupEditSaveCategory';
 import PopupEditSaveTransaction from '../popups/PopupEditSaveTransaction';
@@ -431,26 +431,21 @@ export default function SaveDetailScreen({ navigation, route }: RootStackScreenP
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}>
-
-            <View style={styles.container}>
-                <HeaderView isCenter={true} onBack={onBack} title={saveData.name} />
-                <FlatList
-                    ListHeaderComponent={renderHeader}
-                    renderItem={renderItem}
-                    data={dataList}
-                    keyExtractor={keyExtractor_}
-                    ListEmptyComponent={<EmptyView />}
-                />
-                <PopupFormSave ref={createTransactionRef} onSuccess={onCreateTransactionSuccess} />
-                <PopupEditSaveTransaction ref={editTransactionRef} onSuccess={onUpdateSuccess} />
-                <PopupEditSaveCategory ref={editCategoryRef} onSuccess={onEditCategorySuccess} />
-                <PopupConfirm ref={deleteConfirmRef} />
-                <PopupToast ref={toastRef} />
-            </View>
-        </KeyboardAvoidingView>
+        <View style={styles.container}>
+            <HeaderView isCenter={true} onBack={onBack} title={saveData.name} />
+            <FlatList
+                ListHeaderComponent={renderHeader}
+                renderItem={renderItem}
+                data={dataList}
+                keyExtractor={keyExtractor_}
+                ListEmptyComponent={<EmptyView />}
+            />
+            <PopupFormSave ref={createTransactionRef} onSuccess={onCreateTransactionSuccess} />
+            <PopupEditSaveTransaction ref={editTransactionRef} onSuccess={onUpdateSuccess} />
+            <PopupEditSaveCategory ref={editCategoryRef} onSuccess={onEditCategorySuccess} />
+            <PopupConfirm ref={deleteConfirmRef} />
+            <PopupToast ref={toastRef} />
+        </View>
     );
 }
 

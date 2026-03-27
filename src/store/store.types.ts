@@ -15,6 +15,8 @@ export interface InfoUserStore {
 }
 
 export interface ListItem {
+    categoriesExpense: Category[],
+    setCategoriesExpense: (data: Category[]) => void;
     listExpense: InfoTransaction[],
     setListExpense: (data: InfoTransaction[]) => void;
     listInvest: DataInvestItem[],

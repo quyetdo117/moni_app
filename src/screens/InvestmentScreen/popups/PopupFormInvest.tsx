@@ -6,11 +6,11 @@ import { Category } from '@/types/schema.types'
 import { PopupRef } from '@/types/view.types'
 import { commonStyles } from '@/utils/styles_shadow'
 import RNBounceable from '@freakycoder/react-native-bounceable'
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import moment from 'moment'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown'
 import { DataFormInvest } from '../types/Investment.types'
 
@@ -75,7 +75,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
     const date_ = new Date(date_buy * 1000);
     const dataStr = moment(date_buy * 1000).format('DD/MM/YYYY')
 
-    const snapPoints = useMemo(() => ['50%', '90%'], []);
+    const snapPoints = useMemo(() => ['90%'], []);
 
     useEffect(() => {
         getCategoriesInvest();
@@ -265,7 +265,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
         return (
             <>
                 <Text style={styles.label}>{onGetTitle(type)}</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={[styles.input, isNote && styles.noteInput]}
                     value={onGetValue(type)}
                     onChangeText={(txt) => {
@@ -343,6 +343,8 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
             index={-1}
             snapPoints={snapPoints}
             enablePanDownToClose={true}
+            keyboardBehavior="extend"
+            keyboardBlurBehavior="restore"
             onAnimate={(fromIndex, toIndex) => {
                 if (toIndex === 0) {
                     onClose();
@@ -387,7 +389,7 @@ const PopupFormInvest = forwardRef<PopupRef, PopupFormInvestProps>((props, ref) 
                                 onChange={onSelectExistingAsset}
                             />
                         ) : (
-                            <TextInput
+                            <BottomSheetTextInput
                                 placeholder='Nhập tên tài sản ...'
                                 onChangeText={(txt) => onChangeText(txt, 'name')}
                                 value={dataForm.name}

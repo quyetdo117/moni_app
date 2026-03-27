@@ -127,7 +127,7 @@ export const createTransactionInvest = async (body: DataFormInvest) => {
                     id: newTransactionRef.id,
                     createdAt: currentTimestamp
                 };
-                dataResult.transaction = {...newTransactionData};
+                dataResult.transaction = { ...newTransactionData };
                 ts.set(newTransactionRef, newTransactionData)
 
             } else {
@@ -333,9 +333,14 @@ export const deleteTransaction = async (id: string, type_asset: string) => {
                 throw new Error("Khong tim thay du lieu!");
             }
             const isInvest = type_asset === key_assets.invest;
+            const isExpense = type_asset === key_assets.expense;
 
             // Cap nhat user
-            ts.update(userRef, { balance: increment(newTotalValue) });
+            if (isExpense) {
+                ts.update(userRef, { balance: increment(newTotalValue) });
+            } else {
+                ts.update(userRef, { balance: increment(-newTotalValue) });
+            }
 
             // Cap nhat category
             const categoryUpdate: Record<string, any> = {};
@@ -519,11 +524,18 @@ export const updateTransaction = async (data: any) => {
                         const assetData = assetSnap.data() as Asset;
                         const type_asset = assetData.type;
                         const isInvest = type_asset === key_assets.invest;
+                        const isExpense = type_asset === key_assets.expense;
 
                         // User
-                        ts.update(userRef, {
-                            balance: increment(money_diffirent_)
-                        })
+                        if(isExpense){
+                            ts.update(userRef, {
+                                balance: increment(money_diffirent_)
+                            })
+                        } else {
+                            ts.update(userRef, {
+                                balance: increment(-money_diffirent_)
+                            })
+                        }
 
                         // Category
                         if (category_id == category_id_current) {

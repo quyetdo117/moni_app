@@ -33,11 +33,13 @@ export const useUserStore = create<InfoUserStore>()(
 );
 
 export const useListStore = create<ListItem>((set) => ({
-    listExpense: [],
+    categoriesExpense: [],
+    setCategoriesExpense: (data) => set({ categoriesExpense: data }),
+    listExpense: [], // list transaction
     setListExpense: (data) => set({ listExpense: data }),
-    listInvest: [],
+    listInvest: [], // list category
     setListInvest: (data) => set({ listInvest: data }),
-    listSave: [],
+    listSave: [], // list category
     setListSave: (data) => set({ listSave: data })
 }))
 

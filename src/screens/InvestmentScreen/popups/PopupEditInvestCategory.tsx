@@ -2,12 +2,12 @@ import { COLOR_APP } from '@/constants/constants';
 import { DataInvestItem } from '@/screens/InvestmentScreen/types/Investment.types';
 import { updateCategory } from '@/services/Api/transaction.services';
 import { PopupRef } from '@/types/view.types';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import moment from 'moment';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PopupEditInvestCategoryProps {
     onSuccess?: (data: DataInvestItem) => void;
@@ -107,6 +107,8 @@ const PopupEditInvestCategory = forwardRef<PopupRef, PopupEditInvestCategoryProp
             ref={bottomSheetRef}
             index={-1}
             snapPoints={snapPoints}
+            keyboardBehavior="extend"
+            keyboardBlurBehavior="restore"
             onClose={() => setOpen(false)}
             backdropComponent={renderBackdrop}
             enablePanDownToClose
@@ -116,7 +118,7 @@ const PopupEditInvestCategory = forwardRef<PopupRef, PopupEditInvestCategoryProp
 
                 {/* Name Input */}
                 <Text style={styles.label}>Tên</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={dataForm.name}
                     onChangeText={(value) => onChangeText('name', value)}
@@ -125,7 +127,7 @@ const PopupEditInvestCategory = forwardRef<PopupRef, PopupEditInvestCategoryProp
 
                 {/* Market Value Input */}
                 <Text style={styles.label}>Giá thị trường</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={marketValueStr}
                     onChangeText={(value) => onChangeText('market_value', value)}

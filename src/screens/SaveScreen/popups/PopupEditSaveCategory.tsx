@@ -1,11 +1,11 @@
 import { COLOR_APP } from '@/constants/constants';
 import { updateCategorySave } from '@/services/Api/transaction.services';
 import { PopupRef } from '@/types/view.types';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { SaveDetailData } from '../SaveDetailScreen';
 
 interface PopupEditSaveCategoryProps {
@@ -19,7 +19,7 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
     const [dataForm, setDataForm] = useState<SaveDetailData | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
 
-    const snapPoints = useMemo(() => ['55%'], []);
+    const snapPoints = useMemo(() => ['70%'], []);
 
     useImperativeHandle(ref, () => ({
         onShow,
@@ -97,6 +97,7 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
 
     const dateStr = dataForm?.date_buy ? moment(dataForm.date_buy * 1000).format('DD/MM/YYYY') : '';
     const targetStr = dataForm?.target?.toString() || '';
+    const totalValueStr = dataForm?.total_value?.toString() || '';
 
     if (!isOpen || !dataForm) return null;
 
@@ -105,6 +106,8 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
             ref={bottomSheetRef}
             index={-1}
             snapPoints={snapPoints}
+            keyboardBehavior="extend"
+            keyboardBlurBehavior="restore"
             onClose={() => setOpen(false)}
             backdropComponent={renderBackdrop}
             enablePanDownToClose
@@ -114,7 +117,7 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
 
                 {/* Name Input */}
                 <Text style={styles.label}>Tên</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={dataForm.name}
                     onChangeText={(value) => onChangeText('name', value)}
@@ -123,7 +126,7 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
 
                 {/* Target Input */}
                 <Text style={styles.label}>Mục tiêu (VNĐ)</Text>
-                <TextInput
+                <BottomSheetTextInput
                     style={styles.input}
                     value={targetStr}
                     onChangeText={(value) => onChangeText('target', value)}
@@ -131,13 +134,15 @@ const PopupEditSaveCategory = forwardRef<PopupRef, PopupEditSaveCategoryProps>((
                     placeholder="Nhập số tiền mục tiêu"
                 />
 
-                {/* Current Amount Display */}
-                <View style={styles.rowInfo}>
-                    <Text style={styles.label}>Số tiền hiện tại:</Text>
-                    <Text style={styles.valueInfo}>
-                        {((dataForm.total_value) || 0).toLocaleString()} ₫
-                    </Text>
-                </View>
+                {/* Current Amount Input */}
+                <Text style={styles.label}>Số tiền hiện tại (VNĐ)</Text>
+                <BottomSheetTextInput
+                    style={styles.input}
+                    value={totalValueStr}
+                    onChangeText={(value) => onChangeText('total_value', value)}
+                    keyboardType="numeric"
+                    placeholder="Nhập số tiền hiện tại"
+                />
 
                 {/* Date Picker */}
                 <Text style={styles.label}>Ngày tạo</Text>

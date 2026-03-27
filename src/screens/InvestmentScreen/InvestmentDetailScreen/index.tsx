@@ -16,7 +16,7 @@ import { PopupRef } from '@/types/view.types';
 import { calculateROI, formatSmartMoney } from '@/utils/convertData';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../../../constants/theme';
 import PopupEditInvestCategory from '../popups/PopupEditInvestCategory';
 import PopupEditTransaction from '../popups/PopupEditTransaction';
@@ -42,7 +42,6 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     const toastRef = useRef<PopupRef>(null);
     const [dataList, setDataList] = useState<InfoTransaction[]>([]);
     const [investmentData, setInvestmentData] = useState<DataInvestItem>(investmentDataParam);
-
     useEffect(() => {
         onGetData();
     }, []);
@@ -457,32 +456,27 @@ export default function InvestmentDetailScreen({ navigation, route }: RootStackS
     }
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}>
-
-            <View style={styles.container}>
-                <HeaderView
-                    isCenter={true}
-                    onBack={onBack}
-                    style_txt={{ fontSize: 20 }}
-                    title={'Chi tiết khoản đầu tư'} />
-                <FlatList
-                    ListHeaderComponent={renderHeader}
-                    renderItem={renderItem}
-                    data={dataList}
-                    keyExtractor={keyExtractor_}
-                    ListEmptyComponent={<EmptyView />}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
-                <PopupEditTransaction ref={editTransactionRef} onSuccess={onUpdateSuccess} />
-                <PopupEditInvestCategory ref={editCategoryRef} onSuccess={onEditCategorySuccess} />
-                <PopupFormInvest ref={createTransactionRef} onSuccess={onCreateTransactionSuccess} />
-                <PopupConfirm ref={deleteConfirmRef} />
-                <PopupToast ref={toastRef} />
-            </View>
-        </KeyboardAvoidingView>
+        <View style={styles.container}>
+            <HeaderView
+                isCenter={true}
+                onBack={onBack}
+                style_txt={{ fontSize: 20 }}
+                title={'Chi tiết khoản đầu tư'} />
+            <FlatList
+                ListHeaderComponent={renderHeader}
+                renderItem={renderItem}
+                data={dataList}
+                keyExtractor={keyExtractor_}
+                ListEmptyComponent={<EmptyView />}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+            />
+            <PopupEditTransaction ref={editTransactionRef} onSuccess={onUpdateSuccess} />
+            <PopupEditInvestCategory ref={editCategoryRef} onSuccess={onEditCategorySuccess} />
+            <PopupFormInvest ref={createTransactionRef} onSuccess={onCreateTransactionSuccess} />
+            <PopupConfirm ref={deleteConfirmRef} />
+            <PopupToast ref={toastRef} />
+        </View>
     )
 }
 

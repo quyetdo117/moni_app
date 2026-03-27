@@ -4,8 +4,6 @@ import { loginUser, registerUser } from '@/services/Api/auth.services';
 import { useUserStore } from '@/store/main.store';
 import React, { useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -44,51 +42,46 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>M</Text>
-          </View>
-          <Text style={styles.appName}>MoniSocial</Text>
-          <Text style={styles.tagline}>Quản lý tài chính thông minh</Text>
+    <View style={styles.content}>
+      {/* Header Section */}
+      <View style={styles.headerSection}>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoText}>M</Text>
+        </View>
+        <Text style={styles.appName}>MoniSocial</Text>
+        <Text style={styles.tagline}>Quản lý tài chính thông minh</Text>
+      </View>
+
+      {/* Form Section */}
+      <View style={styles.formSection}>
+        <Text style={styles.title}>{isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}</Text>
+        
+        <View style={styles.formContainer}>
+          {isLogin ? <BoxLogin ref={loginBox} /> : <BoxRegister ref={registerBox} />}
         </View>
 
-        {/* Form Section */}
-        <View style={styles.formSection}>
-          <Text style={styles.title}>{isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}</Text>
-          
-          <View style={styles.formContainer}>
-            {isLogin ? <BoxLogin ref={loginBox} /> : <BoxRegister ref={registerBox} />}
-          </View>
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={onPressButton}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.submitButtonText}>
+            {isLogin ? 'Đăng nhập' : 'Đăng ký'}
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={onPressButton}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.submitButtonText}>
-              {isLogin ? 'Đăng nhập' : 'Đăng ký'}
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchText}>
+            {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
+          </Text>
+          <TouchableOpacity onPress={onChangeOption}>
+            <Text style={styles.switchButtonText}>
+              {isLogin ? ' Đăng ký ngay' : ' Đăng nhập'}
             </Text>
           </TouchableOpacity>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchText}>
-              {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
-            </Text>
-            <TouchableOpacity onPress={onChangeOption}>
-              <Text style={styles.switchButtonText}>
-                {isLogin ? ' Đăng ký ngay' : ' Đăng nhập'}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
